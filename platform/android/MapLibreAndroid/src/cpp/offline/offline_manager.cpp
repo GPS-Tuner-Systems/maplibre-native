@@ -263,7 +263,8 @@ void OfflineManager::registerNative(jni::JNIEnv& env) {
         METHOD(&OfflineManager::clearAmbientCache, "nativeClearAmbientCache"),
         METHOD(&OfflineManager::setMaximumAmbientCacheSize, "nativeSetMaximumAmbientCacheSize"),
         METHOD(&OfflineManager::runPackDatabaseAutomatically, "runPackDatabaseAutomatically"),
-        METHOD(&OfflineManager::putResourceWithUrl, "putResourceWithUrl"));
+        METHOD(&OfflineManager::putResourceWithUrl, "putResourceWithUrl"),
+        METHOD(&OfflineManager::putTileResource, "putTileResource"));
 }
 
 // OfflineManager::ListOfflineRegionsCallback //
@@ -404,6 +405,39 @@ void OfflineManager::putResourceWithUrl(jni::JNIEnv& env,
     }
 
     fileSource->put(resource, response);
+}
+
+void OfflineManager::putTileResource( jni::JNIEnv& env_,
+                                     const jni::String& url_,
+                                     const jni::Array<jni::jbyte>& arr,
+                                     jint pixelRatio,
+                                     jint x,
+                                     jint y,
+                                     jint z,
+                                     const jni::Object<FileSourceCallback>& callback_) {
+
+    auto globalCallback = jni::NewGlobal<jni::EnvAttachingDeleter>(env_, callback_);
+    auto url = jni::Make<std::string>(env_, url_);
+    auto data = std::make_shared<std::string>(arr.Length(env_), char());
+    jni::GetArrayRegion(env_, *arr, 0, data->size(), reinterpret_cast<jbyte*>(&(*data)[0]));
+
+    mbgl::Resource::TileData tile;
+    tile.urlTemplate = url;
+    tile.pixelRatio = pixelRatio;
+    tile.x = x;
+    tile.y = y;
+    tile.z = z;
+    mbgl::Resource resource(mbgl::Resource::Kind::Tile, url, tile );
+    mbgl::Response response;
+    response.data = data;
+
+    fileSource->forward(resource, response, [
+                                                // Keep a shared ptr to a global reference of the callback so
+                                                // they are not GC'd in the meanwhile
+                                                callback = std::make_shared<decltype(globalCallback)>(std::move(globalCallback))](){
+        android::UniqueEnv env = android::AttachEnv();
+        OfflineManager::FileSourceCallback::onSuccess(*env, *callback);
+    } );
 }
 
 } // namespace android

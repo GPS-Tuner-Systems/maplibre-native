@@ -135,6 +135,15 @@ public:
                             const jni::String& eTag,
                             jboolean mustRevalidate);
 
+    void putTileResource( jni::JNIEnv&,
+                         const jni::String& url,
+                         const jni::Array<jni::jbyte>& data,
+                         jint pixelRatio,
+                         jint x,
+                         jint y,
+                         jint z,
+                         const jni::Object<FileSourceCallback>& callback_ );
+
     void resetDatabase(jni::JNIEnv&, const jni::Object<FileSourceCallback>& callback_);
 
     void packDatabase(jni::JNIEnv&, const jni::Object<FileSourceCallback>& callback_);

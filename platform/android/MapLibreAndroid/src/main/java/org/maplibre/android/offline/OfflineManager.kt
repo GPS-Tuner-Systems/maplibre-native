@@ -626,6 +626,9 @@ class OfflineManager private constructor(context: Context) {
     @Keep
     external fun putResourceWithUrl(url: String?, data: ByteArray?, modified: Long, expires: Long, etag: String?, mustRevalidate: Boolean)
 
+    @Keep
+    external fun putTileResource( url: String?, data: ByteArray?, pixelRatio: Int, x: Int, y: Int, z: Int, callback: FileSourceCallback? )
+
     companion object {
         private const val TAG = "Mbgl - OfflineManager"
 
