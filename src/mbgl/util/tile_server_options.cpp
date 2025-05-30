@@ -33,6 +33,10 @@ public:
 
     std::vector<mbgl::util::DefaultStyle> defaultStyles;
     std::string defaultStyle;
+
+    std::string offlineMapFileFolder;
+
+    std::string offlineMapFilePrefix;
 };
 
 TileServerOptions::TileServerOptions()
@@ -208,6 +212,28 @@ TileServerOptions& TileServerOptions::withDefaultStyle(std::string defaultStyle)
 
 const std::string& TileServerOptions::defaultStyle() const {
     return impl_->defaultStyle;
+}
+
+TileServerOptions& TileServerOptions::withOfflineMapFileFolder(std::string path)
+{
+    impl_->offlineMapFileFolder = std::move(path);
+    return *this;
+}
+
+const std::string& TileServerOptions::offlineMapFileFolder() const
+{
+    return impl_->offlineMapFileFolder;
+}
+
+TileServerOptions& TileServerOptions::withOfflineMapFilePrefix(std::string prefix)
+{
+    impl_->offlineMapFilePrefix = std::move(prefix);
+    return *this;
+}
+
+const std::string& TileServerOptions::offlineMapFilePrefix() const
+{
+    return impl_->offlineMapFilePrefix;
 }
 
 TileServerOptions TileServerOptions::DefaultConfiguration() {

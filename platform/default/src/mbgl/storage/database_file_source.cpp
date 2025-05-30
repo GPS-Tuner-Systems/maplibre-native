@@ -45,6 +45,10 @@ public:
         }
     }
 
+    void setTileServerOptions( const TileServerOptions &tileServerOptions ){
+        db->setTileServerOptions( tileServerOptions );
+    }
+
     void forward(const Resource& resource, const Response& response, const std::function<void()>& callback) {
         db->put(resource, response);
         if (callback) {
@@ -342,6 +346,7 @@ void DatabaseFileSource::resume() {
 
 void DatabaseFileSource::setResourceOptions(ResourceOptions options) {
     impl->setResourceOptions(options.clone());
+    impl->actor().invoke(&DatabaseFileSourceThread::setTileServerOptions, options.tileServerOptions() );
 }
 
 ResourceOptions DatabaseFileSource::getResourceOptions() {

@@ -129,6 +129,10 @@ mbgl::TileServerOptions TileServerOptions::getTileServerOptions(jni::JNIEnv& env
 
     static auto defaultStyleField = javaClass.GetField<jni::String>(env, "defaultStyle");
 
+    static auto offlineMapFileFolderField = javaClass.GetField<jni::String>(env, "offlineMapFileFolder");
+
+    static auto offlineMapFilePostfixField = javaClass.GetField<jni::String>(env, "offlineMapFilePostfix");
+
     static auto defaultStylesField = javaClass.GetField<jni::Array<jni::Object<DefaultStyle>>>(env, "defaultStyles");
     std::vector<mbgl::util::DefaultStyle> defaultStyles = TileServerOptions::getDefaultStyles(
         env, options.Get(env, defaultStylesField));
@@ -171,6 +175,9 @@ mbgl::TileServerOptions TileServerOptions::getTileServerOptions(jni::JNIEnv& env
 
     retVal.withDefaultStyle(jni::Make<std::string>(env, options.Get(env, defaultStyleField)));
     retVal.withDefaultStyles(defaultStyles);
+
+    retVal.withOfflineMapFileFolder(jni::Make<std::string>(env, options.Get(env, offlineMapFileFolderField)));
+    retVal.withOfflineMapFilePrefix(jni::Make<std::string>(env, options.Get(env, offlineMapFilePostfixField)));
 
     return retVal;
 }

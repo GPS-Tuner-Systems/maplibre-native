@@ -75,6 +75,10 @@ public class TileServerOptions implements Parcelable {
   private String defaultStyle;
   @Keep
   private DefaultStyle[] defaultStyles;
+  @Keep
+  private String offlineMapFileFolder;
+  @Keep
+  private String offlineMapFilePostfix;
 
   /**
    * Construct a new TileServerOptions given string arguments
@@ -146,6 +150,8 @@ public class TileServerOptions implements Parcelable {
     setDefaultStyles(defaultStyles);
     setDefaultStyle(defaultStyle);
     setApiKeyRequired(apiKeyRequired);
+    setOfflineMapFileFolder("");
+    setOfflineMapFilePostfix("");
   }
 
   public void setBaseURL(String baseURL) {
@@ -296,6 +302,22 @@ public class TileServerOptions implements Parcelable {
     this.apiKeyRequired = isRequired;
   }
 
+  public String getOfflineMapFileFolder(){
+    return this.offlineMapFileFolder;
+  }
+
+  public void setOfflineMapFileFolder( String path ){
+    this.offlineMapFileFolder = path;
+  }
+
+  public void setOfflineMapFilePostfix( String postFix ){
+    this.offlineMapFilePostfix = postFix;
+  }
+
+  public String getOfflineMapFilePostfix(){
+    return this.offlineMapFilePostfix;
+  }
+
   public boolean getApiKeyRequired() {
     return this.apiKeyRequired;
   }
@@ -352,6 +374,8 @@ public class TileServerOptions implements Parcelable {
     setApiKeyParameterName(in.readString());
     setApiKeyRequired(in.readByte() != 0);
     setDefaultStyle(in.readString());
+    setOfflineMapFileFolder(in.readString());
+    setOfflineMapFilePostfix(in.readString());
     in.createTypedArray(DefaultStyle.CREATOR);
   }
 
@@ -383,6 +407,8 @@ public class TileServerOptions implements Parcelable {
     out.writeString(apiKeyParameterName);
     out.writeByte((byte) (apiKeyRequired ? 1 : 0));
     out.writeString(defaultStyle);
+    out.writeString(offlineMapFileFolder);
+    out.writeString(offlineMapFilePostfix);
     out.writeTypedArray(defaultStyles, 0);
   }
 

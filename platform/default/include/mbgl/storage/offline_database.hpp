@@ -43,6 +43,7 @@ public:
     ~OfflineDatabase();
 
     void changePath(const std::string&);
+    void setTileServerOptions( const TileServerOptions &tileServerOptions );
     std::exception_ptr resetDatabase();
 
     std::optional<Response> get(const Resource&);

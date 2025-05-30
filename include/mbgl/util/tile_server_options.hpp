@@ -278,6 +278,15 @@ public:
      */
     const std::string& defaultStyle() const;
 
+
+    TileServerOptions& withOfflineMapFileFolder(std::string path);
+
+    const std::string& offlineMapFileFolder() const;
+
+    TileServerOptions& withOfflineMapFilePrefix(std::string prefix);
+
+    const std::string& offlineMapFilePrefix() const;
+
     /**
      * @brief Get the default configuration
      */
