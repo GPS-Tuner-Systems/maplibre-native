@@ -15,7 +15,6 @@
 #include <mbgl/shaders/line_layer_ubo.hpp>
 #include <mbgl/util/convert.hpp>
 #include <mbgl/util/geometry.hpp>
-#include <mbgl/programs/fill_program.hpp>
 #include <mbgl/shaders/fill_layer_ubo.hpp>
 #include <mbgl/util/math.hpp>
 #include <mbgl/tile/geometry_tile_data.hpp>
@@ -520,8 +519,23 @@ util::SimpleIdentity CustomDrawableLayerHost::Interface::addPolyline(const LineS
 
     switch (shaderType) {
         case LineShaderType::Classic: {
-            // TODO: build classic polyline with Geo coordinates
-            return util::SimpleIdentity::Empty;
+            // build classic polyline with Geo coordinates
+            if (!updateBuilder(BuilderType::LineClassic, "custom-lines", lineShaderDefault())) {
+                return util::SimpleIdentity::Empty;
+            }
+
+            // geographic coordinates require tile {0, 0, 0}
+            setTileID({0, 0, 0});
+
+            constexpr int32_t zoom = 0;
+            GeometryCoordinates tileCoordinates;
+            for (const auto& coord : coordinates) {
+                const auto point = Projection::project(LatLng(coord.y, coord.x), zoom);
+                tileCoordinates.push_back(Point<int16_t>(static_cast<int16_t>(point.x * mbgl::util::EXTENT),
+                                                         static_cast<int16_t>(point.y * mbgl::util::EXTENT)));
+            }
+
+            builder->addPolyline(tileCoordinates, lineOptions.geometry);
         } break;
 
         case LineShaderType::WideVector: {
@@ -582,7 +596,7 @@ util::SimpleIdentity CustomDrawableLayerHost::Interface::addFill(const GeometryC
     const std::shared_ptr<TriangleIndexVector> sharedTriangles = std::make_shared<TriangleIndexVector>();
     TriangleIndexVector& triangles = *sharedTriangles;
 
-    SegmentVector<FillAttributes> triangleSegments;
+    SegmentVector triangleSegments;
 
     // generate fill geometry into buffers
     gfx::generateFillBuffers(geometry, vertices, triangles, triangleSegments);
@@ -642,8 +656,8 @@ util::SimpleIdentity CustomDrawableLayerHost::Interface::addSymbol(
 
     triangles.emplace_back(0, 1, 2, 1, 2, 3);
 
-    SegmentVector<CustomSymbolIcon> triangleSegments;
-    triangleSegments.emplace_back(Segment<CustomSymbolIcon>{0, 0, 4, 6});
+    SegmentVector triangleSegments;
+    triangleSegments.emplace_back(0, 0, 4, 6);
 
     // add to builder
     auto attrs = context.createVertexAttributeArray();
@@ -697,8 +711,8 @@ util::SimpleIdentity CustomDrawableLayerHost::Interface::addGeometry(
     // geographic coordinates require tile {0, 0, 0}
     setTileID({0, 0, 0});
 
-    SegmentVector<GeometryVertex> triangleSegments;
-    triangleSegments.emplace_back(Segment<GeometryVertex>{0, 0, vertices->elements(), indices->elements()});
+    SegmentVector triangleSegments;
+    triangleSegments.emplace_back(0, 0, vertices->elements(), indices->elements());
 
     // add to builder
     auto attrs = context.createVertexAttributeArray();
