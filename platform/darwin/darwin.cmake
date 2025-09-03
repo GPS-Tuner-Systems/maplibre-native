@@ -162,6 +162,8 @@ add_library(
     EXCLUDE_FROM_ALL
     "${CMAKE_CURRENT_LIST_DIR}/app/ExampleCustomDrawableStyleLayer.mm"
     "${CMAKE_CURRENT_LIST_DIR}/app/CustomStyleLayerExample.m"
+    "${CMAKE_CURRENT_LIST_DIR}/app/PluginLayerExample.mm"
+    "${CMAKE_CURRENT_LIST_DIR}/app/PluginLayerExampleMetalRendering.mm"
 )
 
 target_link_libraries(
@@ -169,13 +171,6 @@ target_link_libraries(
     PUBLIC ios-sdk-static
     PRIVATE mbgl-compiler-options mbgl-core
 )
-
-if(MLN_WITH_METAL)
-    target_compile_definitions(
-        custom-layer-examples
-        PRIVATE MLN_RENDER_BACKEND_METAL=1
-    )
-endif()
 
 target_include_directories(
     custom-layer-examples

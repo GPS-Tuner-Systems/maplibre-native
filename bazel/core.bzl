@@ -1,3 +1,19 @@
+MLN_LAYER_PLUGIN_HEADERS = [
+    "src/mbgl/plugin/plugin_layer.hpp",
+    "src/mbgl/plugin/plugin_layer_factory.hpp",
+    "src/mbgl/plugin/plugin_layer_impl.hpp",
+    "src/mbgl/plugin/plugin_layer_render.hpp",
+    "src/mbgl/plugin/plugin_layer_properties.hpp",
+]
+
+MLN_LAYER_PLUGIN_SOURCE = [
+    "src/mbgl/plugin/plugin_layer.cpp",
+    "src/mbgl/plugin/plugin_layer_factory.cpp",
+    "src/mbgl/plugin/plugin_layer_impl.cpp",
+    "src/mbgl/plugin/plugin_layer_render.cpp",
+    "src/mbgl/plugin/plugin_layer_properties.cpp",
+]
+
 MLN_PUBLIC_GENERATED_STYLE_HEADERS = [
     "include/mbgl/style/layers/circle_layer.hpp",
     "include/mbgl/style/layers/fill_layer.hpp",
@@ -125,9 +141,7 @@ MLN_CORE_SOURCE = [
     "src/mbgl/gfx/attribute.cpp",
     "src/mbgl/gfx/attribute.hpp",
     "src/mbgl/gfx/color_mode.hpp",
-    "src/mbgl/gfx/command_encoder.hpp",
     "src/mbgl/gfx/cull_face_mode.hpp",
-    "src/mbgl/gfx/debug_group.hpp",
     "src/mbgl/gfx/depth_mode.hpp",
     "src/mbgl/gfx/draw_mode.hpp",
     "src/mbgl/gfx/draw_scope.hpp",
@@ -329,6 +343,7 @@ MLN_CORE_SOURCE = [
     "src/mbgl/style/conversion/light.cpp",
     "src/mbgl/style/conversion/position.cpp",
     "src/mbgl/style/conversion/property_value.cpp",
+    "src/mbgl/style/conversion/raster_dem_options.cpp",
     "src/mbgl/style/conversion/rotation.cpp",
     "src/mbgl/style/conversion/source.cpp",
     "src/mbgl/style/conversion/stringify.hpp",
@@ -434,12 +449,11 @@ MLN_CORE_SOURCE = [
     "src/mbgl/style/sources/image_source_impl.cpp",
     "src/mbgl/style/sources/image_source_impl.hpp",
     "src/mbgl/style/sources/raster_dem_source.cpp",
+    "src/mbgl/style/sources/tile_source.cpp",
     "src/mbgl/style/sources/raster_source.cpp",
-    "src/mbgl/style/sources/raster_source_impl.cpp",
-    "src/mbgl/style/sources/raster_source_impl.hpp",
+    "src/mbgl/style/sources/tile_source_impl.cpp",
+    "src/mbgl/style/sources/tile_source_impl.hpp",
     "src/mbgl/style/sources/vector_source.cpp",
-    "src/mbgl/style/sources/vector_source_impl.cpp",
-    "src/mbgl/style/sources/vector_source_impl.hpp",
     "src/mbgl/style/style.cpp",
     "src/mbgl/style/style_impl.cpp",
     "src/mbgl/style/style_impl.hpp",
@@ -473,6 +487,8 @@ MLN_CORE_SOURCE = [
     "src/mbgl/text/shaping.hpp",
     "src/mbgl/text/tagged_string.cpp",
     "src/mbgl/text/tagged_string.hpp",
+    "src/mbgl/text/harfbuzz.cpp",
+    "src/mbgl/text/harfbuzz.hpp",
     "src/mbgl/tile/custom_geometry_tile.cpp",
     "src/mbgl/tile/custom_geometry_tile.hpp",
     "src/mbgl/tile/geojson_tile.cpp",
@@ -593,6 +609,8 @@ MLN_CORE_SOURCE = [
 })
 
 MLN_CORE_HEADERS = [
+    "include/mbgl/gfx/command_encoder.hpp",
+    "include/mbgl/gfx/debug_group.hpp",
     "include/mbgl/gfx/context.hpp",
     "include/mbgl/gfx/context_observer.hpp",
     "include/mbgl/actor/actor.hpp",
@@ -678,6 +696,7 @@ MLN_CORE_HEADERS = [
     "include/mbgl/style/conversion/light.hpp",
     "include/mbgl/style/conversion/position.hpp",
     "include/mbgl/style/conversion/property_value.hpp",
+    "include/mbgl/style/conversion/raster_dem_options.hpp",
     "include/mbgl/style/conversion/rotation.hpp",
     "include/mbgl/style/conversion/source.hpp",
     "include/mbgl/style/conversion/tileset.hpp",
@@ -737,6 +756,7 @@ MLN_CORE_HEADERS = [
     "include/mbgl/style/sources/geojson_source.hpp",
     "include/mbgl/style/sources/image_source.hpp",
     "include/mbgl/style/sources/raster_dem_source.hpp",
+    "include/mbgl/style/sources/tile_source.hpp",
     "include/mbgl/style/sources/raster_source.hpp",
     "include/mbgl/style/sources/vector_source.hpp",
     "include/mbgl/style/sprite.hpp",
@@ -820,8 +840,6 @@ MLN_OPENGL_SOURCE = [
     "src/mbgl/gl/command_encoder.hpp",
     "src/mbgl/gl/context.cpp",
     "src/mbgl/gl/context.hpp",
-    "src/mbgl/gl/fence.cpp",
-    "src/mbgl/gl/fence.hpp",
     "src/mbgl/gl/debugging_extension.cpp",
     "src/mbgl/gl/debugging_extension.hpp",
     "src/mbgl/gl/defines.hpp",
@@ -829,6 +847,8 @@ MLN_OPENGL_SOURCE = [
     "src/mbgl/gl/enum.cpp",
     "src/mbgl/gl/enum.hpp",
     "src/mbgl/gl/extension.hpp",
+    "src/mbgl/gl/fence.cpp",
+    "src/mbgl/gl/fence.hpp",
     "src/mbgl/gl/framebuffer.hpp",
     "src/mbgl/gl/index_buffer_resource.cpp",
     "src/mbgl/gl/index_buffer_resource.hpp",
@@ -1079,4 +1099,11 @@ MLN_DRAWABLES_MTL_HEADERS = [
     "include/mbgl/shaders/mtl/symbol.hpp",
     "include/mbgl/style/layers/mtl/custom_layer_render_parameters.hpp",
     "include/mbgl/shaders/mtl/widevector.hpp",
+]
+
+MLN_SHAPING_HARFBUZZ_SRCS = [
+    "src/mbgl/text/freetype.hpp",
+    "src/mbgl/text/freetype.cpp",
+    "src/mbgl/text/harfbuzz_impl.hpp",
+    "src/mbgl/text/harfbuzz_impl.cpp",
 ]
