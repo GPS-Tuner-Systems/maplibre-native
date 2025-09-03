@@ -404,7 +404,7 @@ open class MapSnapshotter(context: Context, options: Options) {
      * @param layer the layer to add
      * @param below the layer id to add this layer before
      */
-    private fun addLayerBelow(layer: Layer, below: String) {
+    fun addLayerBelow(layer: Layer, below: String) {
         nativeAddLayerBelow(layer.nativePtr, below)
     }
 
@@ -434,7 +434,7 @@ open class MapSnapshotter(context: Context, options: Options) {
      *
      * @param source the source to add
      */
-    private fun addSource(source: Source) {
+    fun addSource(source: Source) {
         nativeAddSource(source, source.nativePtr)
     }
 
@@ -511,12 +511,17 @@ open class MapSnapshotter(context: Context, options: Options) {
 
     private fun drawAttribution(mapSnapshot: MapSnapshot, canvas: Canvas, measure: AttributionMeasure, layout: AttributionLayout?) {
         // draw attribution
-        val anchorPoint = layout!!.anchorPoint
-        if (anchorPoint != null) {
-            drawAttribution(canvas, measure, anchorPoint)
-        } else {
-            val snapshot = mapSnapshot.bitmap
-            Logger.e(TAG, "Could not generate attribution for snapshot size: ${snapshot.width} x ${snapshot.height}. You are required to provide your own attribution for the used sources: ${mapSnapshot.attributions.joinToString()}")
+        if( mapSnapshot.isShowLogo ) {
+            val anchorPoint = layout!!.anchorPoint
+            if (anchorPoint != null) {
+                drawAttribution(canvas, measure, anchorPoint)
+            } else {
+                val snapshot = mapSnapshot.bitmap
+                Logger.e(
+                    TAG,
+                    "Could not generate attribution for snapshot size: ${snapshot.width} x ${snapshot.height}. You are required to provide your own attribution for the used sources: ${mapSnapshot.attributions.joinToString()}"
+                )
+            }
         }
     }
 
