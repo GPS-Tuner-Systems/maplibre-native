@@ -133,8 +133,11 @@ void TileLoader<T>::loadFromCache() {
                     loadedData(res, Resource::LoadingMethod::CacheOnly);
                 }
 
+
                 if (necessity == TileNecessity::Required) {
-                    loadFromNetwork();
+                    if( !resource.priorExpires || resource.priorExpires.value() != Timestamp::max() ) {
+                        loadFromNetwork();
+                    }
                 }
                 break;
             }
@@ -145,7 +148,7 @@ void TileLoader<T>::loadFromCache() {
 template <typename T>
 void TileLoader<T>::makeRequired() {
     if (!request) {
-        loadFromNetwork();
+        loadFromCache();
     }
 }
 

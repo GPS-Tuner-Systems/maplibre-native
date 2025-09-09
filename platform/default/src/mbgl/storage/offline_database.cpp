@@ -510,9 +510,6 @@ bool OfflineDatabase::putResource(const Resource& resource,
     return true;
 }
 
-//#define LOG_INFO(msg) std::cout << "[INFO] " << msg << std::endl
-#define LOG_INFO(msg) { std::ostringstream oss; oss << "OFFLINE_DATABASE " << msg; Log::Info( Event::Database, oss.str() ); }
-
 static bool is_compressed(const std::string& v) {
     return (static_cast<uint8_t>(v[0]) == 0x1f) && (static_cast<uint8_t>(v[1]) == 0x8b);
 }
@@ -545,7 +542,7 @@ std::optional<Response> tryLoadFromMBTiles(const Resource::TileData& tile, const
     fs::path dir = offlineFolder;
 
     if (!fs::exists(dir) || !fs::is_directory(dir)) {
-        LOG_INFO("MBTiles directory not found: " << dir);
+        Log::Info( Event::Database, "MBTiles directory not found: " + offlineFolder);
         return std::nullopt;
     }
 
@@ -584,13 +581,13 @@ std::optional<Response> tryLoadFromMBTiles(const Resource::TileData& tile, const
                 if (fname.rfind("World_osm3d", 0) == 0) {
                     worldDBPath = entry.path().string();
                     worldMaxZoom = maxzoom;
-                    LOG_INFO("Registered world base MBTiles: " << worldDBPath << " with maxzoom=" << worldMaxZoom);
+                    Log::Info( Event::Database, "Registered world base MBTiles: " + worldDBPath + " with maxzoom=" + std::to_string( worldMaxZoom ));
                 }
 
                 tileDBs.emplace(entry.path().string(), MBTilesMeta{db, west, south, east, north, maxzoom});
 
             } catch (const std::exception& e) {
-                LOG_INFO("Could not read metadata from " << entry.path() << ": " << e.what());
+                Log::Info( Event::Database, "Could not read metadata from " + fname + ": " + e.what() );
             }
             tileDBsInitialized = true;
         }
@@ -598,7 +595,7 @@ std::optional<Response> tryLoadFromMBTiles(const Resource::TileData& tile, const
     // If world base map covers this zoom, use only world DB
     if (worldMaxZoom >= 0 && tile.z <= worldMaxZoom) {
         const auto& meta = tileDBs.at(worldDBPath);
-        LOG_INFO("Using world base MBTiles for zoom=" << std::to_string(tile.z));
+        Log::Info( Event::Database, "Using world base MBTiles for zoom=" + std::to_string( tile.z ) );
 
         std::string x = std::to_string(tile.x);
         std::string y = std::to_string((int)(std::pow(2, tile.z) - 1) - tile.y);
@@ -611,23 +608,26 @@ std::optional<Response> tryLoadFromMBTiles(const Resource::TileData& tile, const
             for (mapbox::sqlite::Query q(stmt); q.run();) {
                 auto data = q.get<std::optional<std::string>>(0);
                 if (data) {
-                    LOG_INFO("Tile found in world MBTiles: " << worldDBPath);
+                    Log::Info( Event::Database, "Tile found in world MBTiles: " + worldDBPath);
                     Response response;
                     std::string rawData = *data;
                     if (is_compressed(rawData)) rawData = util::decompress(rawData);
+
                     response.data = std::make_shared<std::string>(std::move(rawData));
                     response.noContent = false;
-                    response.expires = Timestamp::max();
-                    response.etag = "";
-                    response.modified = std::nullopt;
+                    response.error.reset();
+                    response.notModified = false;
                     response.mustRevalidate = false;
+                    response.etag = std::nullopt;
+                    response.modified = std::nullopt;
+                    response.expires = Timestamp::max();
                     return response;
                 }
             }
         } catch (const std::exception& e) {
-            LOG_INFO("Query failed in world MBTiles " << worldDBPath << ": " << e.what());
+            Log::Info( Event::Database, "Query failed in world MBTiles " + worldDBPath + ": " + e.what());
         }
-        LOG_INFO("Tile not found in world MBTiles, falling back to country DBs");
+        Log::Info( Event::Database, "Tile not found in world MBTiles, falling back to country DBs");
     }
 
     // Compute WGS84 bounds for the tile
@@ -648,7 +648,7 @@ std::optional<Response> tryLoadFromMBTiles(const Resource::TileData& tile, const
     std::string y = std::to_string((int)(std::pow(2, tile.z) - 1) - tile.y);
     std::string z = std::to_string(tile.z);
 
-    LOG_INFO("Looking for MBTiles tile: z=" << z << ", x=" << x << ", y=" << y);
+    Log::Info( Event::Database, "Looking for MBTiles tile: z=" + z + ", x=" + x + ", y=" + std::to_string( tile.y ) + "(" + y + ")" );
 
     for (const auto& [path, meta] : tileDBs) {
         if (path == worldDBPath) continue; // skip world after base
@@ -663,24 +663,27 @@ std::optional<Response> tryLoadFromMBTiles(const Resource::TileData& tile, const
             for (mapbox::sqlite::Query q(stmt); q.run();) {
                 auto data = q.get<std::optional<std::string>>(0);
                 if (data) {
-                    LOG_INFO("Tile found in: " << path);
+                    Log::Info( Event::Database, "Tile found in: " + path +  "tile z=" + z + ", x=" + x + ", y=" + std::to_string( tile.y ) + "(" + y + ")" );
                     Response response;
                     std::string rawData = *data;
                     if (is_compressed(rawData)) rawData = util::decompress(rawData);
+
                     response.data = std::make_shared<std::string>(std::move(rawData));
                     response.noContent = false;
-                    response.expires = Timestamp::max();
-                    response.etag = "";
-                    response.modified = std::nullopt;
+                    response.error.reset();
+                    response.notModified = false;
                     response.mustRevalidate = false;
+                    response.etag = std::nullopt;
+                    response.modified = std::nullopt;
+                    response.expires = Timestamp::max();
                     return response;
                 }
             }
         } catch (const std::exception& e) {
-            LOG_INFO("Query failed in " << path << ": " << e.what());
+            Log::Info( Event::Database, "Query failed in " + path + ": " + e.what());
         }
     }
-    LOG_INFO("Tile not found in MBTiles cache. Falling back to default.");
+    Log::Info( Event::Database, "Tile not found in MBTiles cache. Falling back to default.");
     return std::nullopt;
 }
 
@@ -690,7 +693,7 @@ std::optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Reso
     std::optional<Response> mbtilesResponse = tryLoadFromMBTiles(tile, tileServerOptions.offlineMapFileFolder(), tileServerOptions.offlineMapFilePrefix());
     if (mbtilesResponse)
     {
-        LOG_INFO("[INFO] Loaded tile from custom MBTiles cache.");
+        Log::Info( Event::Database, "Loaded tile from custom MBTiles cache." );
         return std::make_pair(*mbtilesResponse, mbtilesResponse->data ? mbtilesResponse->data->size() : 0);
     }
     if (!readOnly) {
