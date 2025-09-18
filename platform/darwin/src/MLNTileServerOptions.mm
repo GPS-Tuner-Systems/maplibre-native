@@ -28,4 +28,7 @@
 @synthesize defaultStyles;
 @synthesize defaultStyle;
 
+@synthesize offlineMapFileFolder;
+@synthesize offlineMapFilePostfix;
+
 @end

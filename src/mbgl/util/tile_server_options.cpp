@@ -36,7 +36,7 @@ public:
 
     std::string offlineMapFileFolder;
 
-    std::string offlineMapFilePrefix;
+    std::string offlineMapFilePostfix;
 };
 
 TileServerOptions::TileServerOptions()
@@ -225,15 +225,15 @@ const std::string& TileServerOptions::offlineMapFileFolder() const
     return impl_->offlineMapFileFolder;
 }
 
-TileServerOptions& TileServerOptions::withOfflineMapFilePrefix(std::string prefix)
+TileServerOptions& TileServerOptions::withOfflineMapFilePostfix(std::string postfix)
 {
-    impl_->offlineMapFilePrefix = std::move(prefix);
+    impl_->offlineMapFilePostfix = std::move(postfix);
     return *this;
 }
 
-const std::string& TileServerOptions::offlineMapFilePrefix() const
+const std::string& TileServerOptions::offlineMapFilePostfix() const
 {
-    return impl_->offlineMapFilePrefix;
+    return impl_->offlineMapFilePostfix;
 }
 
 TileServerOptions TileServerOptions::DefaultConfiguration() {

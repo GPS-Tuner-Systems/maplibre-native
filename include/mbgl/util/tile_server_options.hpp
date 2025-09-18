@@ -283,9 +283,9 @@ public:
 
     const std::string& offlineMapFileFolder() const;
 
-    TileServerOptions& withOfflineMapFilePrefix(std::string prefix);
+    TileServerOptions& withOfflineMapFilePostfix(std::string postfix);
 
-    const std::string& offlineMapFilePrefix() const;
+    const std::string& offlineMapFilePostfix() const;
 
     /**
      * @brief Get the default configuration

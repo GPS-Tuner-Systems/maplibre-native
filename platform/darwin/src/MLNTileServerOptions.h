@@ -111,6 +111,9 @@ MLN_EXPORT
  */
 @property (nonatomic, retain) MLNDefaultStyle* defaultStyle;
 
+@property (nonatomic, retain) NSString* offlineMapFileFolder;
+@property (nonatomic, retain) NSString* offlineMapFilePostfix;
+
 @end
 
 NS_ASSUME_NONNULL_END

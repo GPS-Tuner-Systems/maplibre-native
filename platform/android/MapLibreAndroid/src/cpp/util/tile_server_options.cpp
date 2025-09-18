@@ -177,7 +177,7 @@ mbgl::TileServerOptions TileServerOptions::getTileServerOptions(jni::JNIEnv& env
     retVal.withDefaultStyles(defaultStyles);
 
     retVal.withOfflineMapFileFolder(jni::Make<std::string>(env, options.Get(env, offlineMapFileFolderField)));
-    retVal.withOfflineMapFilePrefix(jni::Make<std::string>(env, options.Get(env, offlineMapFilePostfixField)));
+    retVal.withOfflineMapFilePostfix(jni::Make<std::string>(env, options.Get(env, offlineMapFilePostfixField)));
 
     return retVal;
 }

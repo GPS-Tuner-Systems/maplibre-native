@@ -690,7 +690,7 @@ std::optional<Response> tryLoadFromMBTiles(const Resource::TileData& tile, const
 std::optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource::TileData& tile)
 {
     //Attempt to load from custom MBTiles directory
-    std::optional<Response> mbtilesResponse = tryLoadFromMBTiles(tile, tileServerOptions.offlineMapFileFolder(), tileServerOptions.offlineMapFilePrefix());
+    std::optional<Response> mbtilesResponse = tryLoadFromMBTiles(tile, tileServerOptions.offlineMapFileFolder(), tileServerOptions.offlineMapFilePostfix());
     if (mbtilesResponse)
     {
         Log::Info( Event::Database, "Loaded tile from custom MBTiles cache." );

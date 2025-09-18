@@ -169,6 +169,9 @@
     }
     opts.withDefaultStyles(defaultStyles);
     opts.withDefaultStyle(std::string([options.defaultStyle.name UTF8String]));
+    
+    opts.withOfflineMapFileFolder(std::string([options.offlineMapFileFolder UTF8String]));
+    opts.withOfflineMapFilePostfix(std::string([options.offlineMapFilePostfix UTF8String]));
 
     self.tileServerOptionsInternal = opts;
 }
@@ -222,6 +225,10 @@
         }
 
         retVal.defaultStyles = mglStyles;
+        
+        retVal.offlineMapFileFolder = [NSString stringWithUTF8String:cppOpts->offlineMapFileFolder().c_str()];
+        retVal.offlineMapFilePostfix = [NSString stringWithUTF8String:cppOpts->offlineMapFilePostfix().c_str()];
+        
         return retVal;
     }
 
