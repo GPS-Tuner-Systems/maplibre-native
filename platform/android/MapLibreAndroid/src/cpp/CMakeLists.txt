@@ -223,14 +223,14 @@ target_include_directories(
           ../../../../default/include)
 
 target_compile_options(maplibre
-                       PRIVATE $<$<CONFIG:Release>:-Oz>
+                       PRIVATE $<$<CONFIG:Release>:-O3>
                                $<$<CONFIG:Release>:-Qunused-arguments>
                                $<$<CONFIG:Release>:-flto>
                                $<$<CONFIG:Release>:-fvisibility=hidden>
                                $<$<CONFIG:Release>:-fvisibility-inlines-hidden>)
 
 target_link_libraries(maplibre
-                      PRIVATE $<$<CONFIG:Release>:-Oz>
+                      PRIVATE $<$<CONFIG:Release>:-O3>
                               $<$<CONFIG:Release>:-Wl,--icf=all>
                               $<$<CONFIG:Release>:-Wl,--gc-sections>
                               $<$<CONFIG:Release>:-flto>
