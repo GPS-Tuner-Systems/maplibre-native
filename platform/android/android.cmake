@@ -15,17 +15,17 @@ include(${PROJECT_SOURCE_DIR}/vendor/sqlite.cmake)
 # Android AGP maps the release build variant to RelWithDebInfo (not Release), so we must
 # include RelWithDebInfo here to ensure these flags are actually applied.
 set(_OPT_CONFIGS "$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>")
-target_compile_options(mbgl-vendor-csscolorparser PRIVATE $<${_OPT_CONFIGS}:-Oz> $<${_OPT_CONFIGS}:-Qunused-arguments> $<${_OPT_CONFIGS}:-flto>)
-target_compile_options(mbgl-vendor-icu PRIVATE $<${_OPT_CONFIGS}:-Oz> $<${_OPT_CONFIGS}:-Qunused-arguments> $<${_OPT_CONFIGS}:-flto>)
-target_compile_options(mbgl-vendor-parsedate PRIVATE $<${_OPT_CONFIGS}:-Oz> $<${_OPT_CONFIGS}:-Qunused-arguments> $<${_OPT_CONFIGS}:-flto>)
-target_compile_options(mbgl-vendor-sqlite PRIVATE $<${_OPT_CONFIGS}:-Oz> $<${_OPT_CONFIGS}:-Qunused-arguments> $<${_OPT_CONFIGS}:-flto>)
-target_compile_options(mbgl-compiler-options INTERFACE $<${_OPT_CONFIGS}:-Oz> $<${_OPT_CONFIGS}:-Qunused-arguments> $<${_OPT_CONFIGS}:-flto>)
+target_compile_options(mbgl-vendor-csscolorparser PRIVATE $<${_OPT_CONFIGS}:-O3> $<${_OPT_CONFIGS}:-Qunused-arguments> $<${_OPT_CONFIGS}:-flto>)
+target_compile_options(mbgl-vendor-icu PRIVATE $<${_OPT_CONFIGS}:-O3> $<${_OPT_CONFIGS}:-Qunused-arguments> $<${_OPT_CONFIGS}:-flto>)
+target_compile_options(mbgl-vendor-parsedate PRIVATE $<${_OPT_CONFIGS}:-O3> $<${_OPT_CONFIGS}:-Qunused-arguments> $<${_OPT_CONFIGS}:-flto>)
+target_compile_options(mbgl-vendor-sqlite PRIVATE $<${_OPT_CONFIGS}:-O3> $<${_OPT_CONFIGS}:-Qunused-arguments> $<${_OPT_CONFIGS}:-flto>)
+target_compile_options(mbgl-compiler-options INTERFACE $<${_OPT_CONFIGS}:-O3> $<${_OPT_CONFIGS}:-Qunused-arguments> $<${_OPT_CONFIGS}:-flto>)
 # cmake-format: on
 
 target_link_libraries(
     mbgl-compiler-options
     INTERFACE
-        $<${_OPT_CONFIGS}:-O2>
+        $<${_OPT_CONFIGS}:-O3>
         $<${_OPT_CONFIGS}:-Wl,--icf=all>
         $<${_OPT_CONFIGS}:-flto>
         $<${_OPT_CONFIGS}:-fuse-ld=lld>
