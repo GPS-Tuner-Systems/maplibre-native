@@ -73,14 +73,16 @@ jobs:
             deployment_target: 12.0
             deployment_arch: "x86_64;arm64"
             compiler: ""
-          - name: macOS_LLVM
-            os: macos-14
-            build_type: RelWithDebInfo
-            qt_version: 6.9.1
-            qt_target: desktop
-            deployment_target: 12.0
-            deployment_arch: "arm64"
-            compiler: "llvm"
+          # disabled due to https://github.com/llvm/llvm-project/issues/77653
+          # https://github.com/maplibre/maplibre-native/pull/3879#issuecomment-3406495279
+          # - name: macOS_LLVM
+          #   os: macos-14
+          #   build_type: RelWithDebInfo
+          #   qt_version: 6.9.1
+          #   qt_target: desktop
+          #   deployment_target: 12.0
+          #   deployment_arch: "arm64"
+          #   compiler: "llvm"
           - name: win64_msvc2022
             os: windows-2022
             build_type: "RelWithDebInfo"
@@ -98,12 +100,15 @@ jobs:
       QT_VERSION: ${{ matrix.qt_version }}
 
     steps:
+      - if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
+
       - name: Checkout
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v4
         with:
           path: source
-          fetch-depth: 0
-          submodules: true
+          submodules: recursive
+          persist-credentials: false
 
       - name: Install test dependencies
         if: runner.os == 'Linux'
@@ -125,7 +130,7 @@ jobs:
       - name: Install compiler (Linux)
         id: install_compiler
         if: runner.os == 'Linux'
-        uses: rlalik/setup-cpp-compiler@e312c52f6d9664049d97c75ab084c895d9733c0c # master
+        uses: rlalik/setup-cpp-compiler@dcaf5189c08c028eecc61c082b9993033d731224 # master
         with:
           compiler: ${{ matrix.compiler }}
 
@@ -158,13 +163,13 @@ jobs:
 
       - name: Setup Xcode
         if: runner.os == 'macOS'
-        uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd # v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: latest-stable
 
       - name: Setup MSVC
         if: matrix.qt_arch == 'win64_msvc2022_64'
-        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
           arch: ${{ matrix.compiler_type }}
 
@@ -172,7 +177,7 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@3b1f8f94a2f8254bd26914c4ab9474d4f0015f67 # v6
 
       - name: Download Qt
-        uses: jurplel/install-qt-action@d325aaf2a8baeeda41ad0b5d39f84a6af9bcf005 # v4
+        uses: jurplel/install-qt-action@d325aaf2a8baeeda41ad0b5d39f84a6af9bcf005 # v4.3.0
         with:
           aqtversion: ==3.1.*
           version: ${{ env.QT_VERSION }}
@@ -183,10 +188,15 @@ jobs:
           extra: --base https://mirrors.ocf.berkeley.edu/qt/
 
       - name: Set up ccache
-        uses: hendrikmuhs/ccache-action@63069e3931dedbf3b63792097479563182fe70d1 # v1
+        uses: hendrikmuhs/ccache-action@33522472633dbd32578e909b315f5ee43ba878ce # v1.2.22
         with:
           key: Qt_${{ matrix.name }}_${{ matrix.qt_version }}
           max-size: 200M
+
+      - name: Print cmake version
+        run: |
+          cmake --version
+          which cmake
 
       - name: Build maplibre-native (macOS)
         if: runner.os == 'macOS' && matrix.qt_target == 'desktop'
@@ -233,7 +243,7 @@ jobs:
 
       - name: Run tests (Linux)
         if: runner.os == 'Linux'
-        uses: coactions/setup-xvfb@b6b4fcfb9f5a895edadc3bc76318fae0ac17c8b3 # v1
+        uses: coactions/setup-xvfb@b6b4fcfb9f5a895edadc3bc76318fae0ac17c8b3 # v1.0.1
         with:
           run: ctest --output-on-failure
           working-directory: build

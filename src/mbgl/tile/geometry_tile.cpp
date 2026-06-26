@@ -126,11 +126,11 @@ void GeometryTileRenderData::upload(gfx::UploadPass& uploadPass) {
     assert(atlasTextures);
 
     if (const auto& glyphDynamicTexture = layoutResult->glyphAtlas.dynamicTexture) {
-        glyphDynamicTexture->uploadDeferredImages();
+        glyphDynamicTexture->uploadDeferredImages(uploadPass);
         atlasTextures->glyph = glyphDynamicTexture->getTexture();
     }
     if (const auto& imageDynamicTexture = layoutResult->imageAtlas.dynamicTexture) {
-        imageDynamicTexture->uploadDeferredImages();
+        imageDynamicTexture->uploadDeferredImages(uploadPass);
         atlasTextures->icon = imageDynamicTexture->getTexture();
     }
 
@@ -193,8 +193,9 @@ GeometryTile::GeometryTile(const OverscaledTileID& id_,
       ImageRequestor(parameters.imageManager),
       threadPool(parameters.threadPool),
       mailbox(std::make_shared<Mailbox>(*Scheduler::GetCurrent())),
-      worker(parameters.threadPool, // Scheduler reference for the Actor retainer
-             ActorRef<GeometryTile>(*this, mailbox),
+      worker(parameters.isUpdateSynchronous,
+             parameters.threadPool, // Scheduler reference for the Actor retainer
+             OptionalActorRef<GeometryTile>(parameters.isUpdateSynchronous, *this, mailbox),
              parameters.threadPool,
              id_,
              sourceID,
@@ -225,7 +226,9 @@ GeometryTile::~GeometryTile() {
 
     if (layoutResult) {
         threadPool.runOnRenderThread(
-            [layoutResult_{std::move(layoutResult)}, atlasTextures_{std::move(atlasTextures)}]() {});
+            [layoutResult_{std::move(layoutResult)}, atlasTextures_{std::move(atlasTextures)}]() {
+                layoutResult_->dynamicTextureAtlas->removeUnusedDynamicTextures();
+            });
     }
 }
 
@@ -331,7 +334,7 @@ void GeometryTile::setShowCollisionBoxes(const bool showCollisionBoxes_) {
     }
 }
 
-void GeometryTile::onLayout(std::shared_ptr<LayoutResult> result, const uint64_t resultCorrelationID) {
+void GeometryTile::onLayout(std::shared_ptr<LayoutResult>&& result, const uint64_t resultCorrelationID) {
     MLN_TRACE_FUNC();
 
     loaded = true;
@@ -399,9 +402,9 @@ void GeometryTile::onGlyphsAvailable(GlyphMap glyphMap, [[maybe_unused]] HBShape
 
                     auto fontStackHash = FontStackHasher()(fontStack);
                     bool needShape = true;
-                    if (glyphMap.find(fontStackHash) != glyphMap.end()) {
+                    if (glyphMap.contains(fontStackHash)) {
                         auto& glyphs = glyphMap[fontStackHash];
-                        if (glyphs.find(glyphID) != glyphs.end()) needShape = false;
+                        if (glyphs.contains(glyphID)) needShape = false;
                     }
                     if (needShape) {
                         auto glyph = glyphManager->getGlyph(fontStack, glyphID);

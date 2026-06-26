@@ -43,7 +43,11 @@ protected:
     void initSwapchain(uint32_t w, uint32_t h);
 
     void initDepthStencil();
+    void initRenderPass();
+    void setColorFormat(vk::Format format);
+    void setDepthFormat(vk::Format format);
 
+    void copySurfaceToReadTexture();
     void swap() override;
 
 public:
@@ -52,7 +56,8 @@ public:
 
     const vk::UniqueSurfaceKHR& getPlatformSurface() const { return surface; }
     const vk::UniqueSwapchainKHR& getSwapchain() const { return swapchain; }
-    const vk::UniqueFramebuffer& getFramebuffer() const override;
+    const vk::UniqueFramebuffer& getFramebuffer() const override { return swapchainFramebuffers[acquiredImageIndex]; }
+    vk::Format getColorFormat() const { return colorFormat; }
 
     uint32_t getImageCount() const { return static_cast<uint32_t>(swapchainFramebuffers.size()); };
     uint32_t getAcquiredImageIndex() const { return acquiredImageIndex; };
@@ -72,6 +77,9 @@ public:
 
     void init(uint32_t w, uint32_t h);
     void recreateSwapchain();
+
+    void queueSurfaceRead();
+    std::shared_ptr<PremultipliedImage> readImage();
 
 protected:
     vk::UniqueSurfaceKHR surface;
@@ -96,13 +104,15 @@ protected:
     vk::Format depthFormat{vk::Format::eUndefined};
 
     int32_t surfaceTransformPollingInterval{-1};
+    bool surfaceRead{false};
+    std::unique_ptr<Texture2D> readTexture{nullptr};
 };
 
 class Renderable : public gfx::Renderable {
 protected:
     Renderable(const Size size_, std::unique_ptr<gfx::RenderableResource> resource_)
         : gfx::Renderable(size_, std::move(resource_)) {}
-    virtual ~Renderable() override = default;
+    ~Renderable() override = default;
 
 public:
     void setSize(const Size& size_) { size = size_; }

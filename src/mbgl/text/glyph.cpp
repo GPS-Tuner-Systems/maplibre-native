@@ -1,6 +1,8 @@
 #include <mbgl/text/glyph.hpp>
 #include <mbgl/util/i18n.hpp>
 
+#include <algorithm>
+
 namespace mbgl {
 
 GlyphRange::GlyphRange(uint32_t first_, uint32_t second_, GlyphIDType type_)
@@ -26,6 +28,8 @@ GlyphIDType genNewGlyphIDType() {
     static short glyphType = GlyphIDType::FontPBF;
     ++glyphType;
     if (glyphType == GlyphIDType::FontPBF) ++glyphType;
+    // Intentionally casting to extend the enum's value space for runtime-generated IDs.
+    // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
     return static_cast<GlyphIDType>(glyphType);
 }
 
@@ -55,8 +59,8 @@ GlyphIDType genNewGlyphIDType(const std::string &url,
 GlyphRange getGlyphRange(GlyphID glyph) {
     unsigned start = (glyph.complex.code / 256) * 256;
     unsigned end = (start + 255);
-    if (start > 65280) start = 65280;
-    if (end > 65535) end = 65535;
+    start = std::min<unsigned int>(start, 65280);
+    end = std::min<unsigned int>(end, 65535);
     return {start, end, glyph.complex.type};
 }
 

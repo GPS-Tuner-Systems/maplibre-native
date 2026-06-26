@@ -16,7 +16,7 @@ pkg_search_module(ICUUC icu-uc)
 pkg_search_module(ICUI18N icu-i18n)
 find_program(ARMERGE NAMES armerge)
 
-if(MLN_WITH_WAYLAND)
+if(MLN_WITH_WAYLAND AND NOT MLN_WITH_VULKAN)
     # See https://github.com/maplibre/maplibre-native/pull/2022
 
     # MLN_WITH_EGL needs to be set for Wayland, otherwise this CMakeLists will
@@ -181,8 +181,10 @@ target_link_libraries(
         mbgl-vendor-sqlite
 )
 
-# Bundle system provided libraries
-if(NOT MLN_USE_BUILTIN_ICU AND NOT "${ARMERGE}" STREQUAL "ARMERGE-NOTFOUND")
+if(MLN_CREATE_AMALGAMATION)
+    if ("${ARMERGE}" STREQUAL "MLN_CREATE_AMALGAMATION")
+        message(FATAL_ERROR "armerge required when MLN_CREATE_AMALGAMATION=ON")
+    endif()
     message(STATUS "Found armerge: ${ARMERGE}")
     include(${PROJECT_SOURCE_DIR}/cmake/find_static_library.cmake)
     set(STATIC_LIBS "")
@@ -206,17 +208,25 @@ if(NOT MLN_USE_BUILTIN_ICU AND NOT "${ARMERGE}" STREQUAL "ARMERGE-NOTFOUND")
         find_static_library(STATIC_LIBS NAMES GenericCodeGen)
     endif()
 
+    if(MLN_WITH_WEBGPU AND MLN_WEBGPU_IMPL_WGPU)
+        if(NOT WGPU_STATIC_LIBRARY)
+            message(FATAL_ERROR "Linux WebGPU amalgamation requires WGPU_STATIC_LIBRARY")
+        endif()
+        list(APPEND STATIC_LIBS "${WGPU_STATIC_LIBRARY}")
+    endif()
+
     add_custom_command(
         TARGET mbgl-core
         POST_BUILD
         COMMAND armerge --keep-symbols 'mbgl.*' --output libmbgl-core-amalgam.a
             $<TARGET_FILE:mbgl-core>
-            $<TARGET_FILE:freetype>
+            $<TARGET_FILE:mbgl-freetype>
             $<TARGET_FILE:mbgl-vendor-csscolorparser>
-            $<TARGET_FILE:harfbuzz>
+            $<TARGET_FILE:mbgl-harfbuzz>
             $<TARGET_FILE:mbgl-vendor-nunicode>
             $<TARGET_FILE:mbgl-vendor-sqlite>
             $<TARGET_FILE:mbgl-vendor-parsedate>
+            $<TARGET_FILE:mlt-cpp>
             ${ICUUC_LIBRARY_DIRS}/libicuuc.a
             ${ICUUC_LIBRARY_DIRS}/libicudata.a
             ${ICUI18N_LIBRARY_DIRS}/libicui18n.a

@@ -40,7 +40,7 @@ public:
                             const ImagePositions&,
                             const PatternLayerMap&,
                             std::size_t,
-                            const CanonicalTileID&) {};
+                            const CanonicalTileID&) {}
 
     virtual void update(const FeatureStates&, const GeometryTileLayer&, const std::string&, const ImagePositions&) {}
 
@@ -71,7 +71,7 @@ public:
     const util::SimpleIdentity& getID() const { return bucketID; }
 
 #if MLN_SYMBOL_GUARDS
-    virtual bool check(std::source_location) { return true; }
+    virtual bool check(source_location) { return true; }
 #else
     bool check(std::string_view = {}) { return true; }
 #endif
