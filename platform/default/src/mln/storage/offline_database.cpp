@@ -701,10 +701,23 @@ std::optional<Response> tryLoadFromMBTiles(const Resource::TileData& tile, const
     return std::nullopt;
 }
 
+// The custom MBTiles files only hold vector tiles and are looked up by z/x/y alone,
+// so other tile requests (e.g. raster-dem) must not be answered from them.
+bool isVectorTileTemplate(const std::string& urlTemplate) {
+    const auto path = urlTemplate.substr(0, urlTemplate.find('?'));
+    auto endsWith = [&path](const std::string& suffix) {
+        return path.size() >= suffix.size() && path.compare(path.size() - suffix.size(), suffix.size(), suffix) == 0;
+    };
+    return endsWith(".pbf") || endsWith(".mvt");
+}
+
 std::optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource::TileData& tile)
 {
     //Attempt to load from custom MBTiles directory
-    std::optional<Response> mbtilesResponse = tryLoadFromMBTiles(tile, tileServerOptions.offlineMapFileFolder(), tileServerOptions.offlineMapFilePostfix());
+    std::optional<Response> mbtilesResponse;
+    if (isVectorTileTemplate(tile.urlTemplate)) {
+        mbtilesResponse = tryLoadFromMBTiles(tile, tileServerOptions.offlineMapFileFolder(), tileServerOptions.offlineMapFilePostfix());
+    }
     if (mbtilesResponse)
     {
         Log::Info( Event::Database, "Loaded tile from custom MBTiles cache." );
