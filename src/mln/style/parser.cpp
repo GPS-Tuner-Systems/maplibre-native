@@ -5,6 +5,7 @@
 #include <mln/style/conversion/source.hpp>
 #include <mln/style/conversion/layer.hpp>
 #include <mln/style/conversion/light.hpp>
+#include <mln/style/conversion/terrain.hpp>
 #include <mln/style/conversion/sprite.hpp>
 #include <mln/style/conversion/transition_options.hpp>
 #include <mln/style/conversion_impl.hpp>
@@ -110,6 +111,10 @@ StyleParseResult Parser::parse(const std::string& json) {
 
     if (document.HasMember("light")) {
         parseLight(document["light"]);
+    }
+
+    if (document.HasMember("terrain")) {
+        parseTerrain(document["terrain"]);
     }
 
     if (document.HasMember("state")) {
@@ -240,6 +245,17 @@ void Parser::parseLight(const JSValue& value) {
     light = *converted;
 }
 
+void Parser::parseTerrain(const JSValue& value) {
+    conversion::Error error;
+    std::optional<Terrain> converted = conversion::convert<Terrain>(value, error);
+    if (!converted) {
+        Log::Warning(Event::ParseStyle, error.message);
+        return;
+    }
+
+    terrain = *converted;
+}
+
 namespace {
 
 // Deep conversion of a style JSON value to an mln::Value (unlike
@@ -340,7 +356,7 @@ void Parser::parseSprites(const JSValue& value) {
                 continue;
             }
 
-            if (spriteIds.find(sprite->id) != spriteIds.end()) {
+            if (spriteIds.contains(sprite->id)) {
                 Log::Warning(Event::ParseStyle, "sprite ids must be unique");
                 continue;
             }

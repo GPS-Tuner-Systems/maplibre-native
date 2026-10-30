@@ -21,6 +21,7 @@ TextureInfo::TextureInfo(std::string_view name_, std::size_t id_)
 using BackgroundShaderInfo = ShaderInfo<BuiltIn::BackgroundShader, gfx::Backend::Type::OpenGL>;
 
 const std::vector<UniformBlockInfo> BackgroundShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"GlobalPaintParamsUBO", idGlobalPaintParamsUBO},
     UniformBlockInfo{"BackgroundDrawableUBO", idBackgroundDrawableUBO},
     UniformBlockInfo{"BackgroundPropsUBO", idBackgroundPropsUBO},
 };
@@ -62,7 +63,9 @@ const std::vector<AttributeInfo> CircleShaderInfo::attributes = {
     AttributeInfo{"a_stroke_width", idCircleStrokeWidthVertexAttribute},
     AttributeInfo{"a_stroke_opacity", idCircleStrokeOpacityVertexAttribute},
 };
-const std::vector<TextureInfo> CircleShaderInfo::textures = {};
+const std::vector<TextureInfo> CircleShaderInfo::textures = {
+    TextureInfo{"u_dem", idCircleDEMTexture},
+};
 
 // Collision Box
 using CollisionBoxShaderInfo = ShaderInfo<BuiltIn::CollisionBoxShader, gfx::Backend::Type::OpenGL>;
@@ -112,6 +115,7 @@ const std::vector<TextureInfo> DebugShaderInfo::textures = {
 using FillShaderInfo = ShaderInfo<BuiltIn::FillShader, gfx::Backend::Type::OpenGL>;
 
 const std::vector<UniformBlockInfo> FillShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"GlobalPaintParamsUBO", idGlobalPaintParamsUBO},
     UniformBlockInfo{"FillDrawableUBO", idFillDrawableUBO},
     UniformBlockInfo{"FillEvaluatedPropsUBO", idFillEvaluatedPropsUBO},
 };
@@ -204,11 +208,14 @@ const std::vector<AttributeInfo> FillExtrusionShaderInfo::attributes = {
     AttributeInfo{"a_pos", idFillExtrusionPosVertexAttribute},
     AttributeInfo{"a_decimals_ed", idFillExtrusionDecimalsEdAttribute},
     AttributeInfo{"a_normal2d", idFillExtrusionNormal2DVertexAttribute},
+    AttributeInfo{"a_centroid", idFillExtrusionCentroidVertexAttribute},
     AttributeInfo{"a_base", idFillExtrusionBaseVertexAttribute},
     AttributeInfo{"a_height", idFillExtrusionHeightVertexAttribute},
     AttributeInfo{"a_color", idFillExtrusionColorVertexAttribute},
 };
-const std::vector<TextureInfo> FillExtrusionShaderInfo::textures = {};
+const std::vector<TextureInfo> FillExtrusionShaderInfo::textures = {
+    TextureInfo{"u_dem", idFillExtrusionDEMTexture},
+};
 
 // Fill Extrusion Pattern
 using FillExtrusionPatternShaderInfo = ShaderInfo<BuiltIn::FillExtrusionPatternShader, gfx::Backend::Type::OpenGL>;
@@ -280,6 +287,7 @@ const std::vector<TextureInfo> HillshadePrepareShaderInfo::textures = {
 using HillshadeShaderInfo = ShaderInfo<BuiltIn::HillshadeShader, gfx::Backend::Type::OpenGL>;
 
 const std::vector<UniformBlockInfo> HillshadeShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"GlobalPaintParamsUBO", idGlobalPaintParamsUBO},
     UniformBlockInfo{"HillshadeDrawableUBO", idHillshadeDrawableUBO},
     UniformBlockInfo{"HillshadeTilePropsUBO", idHillshadeTilePropsUBO},
     UniformBlockInfo{"HillshadeEvaluatedPropsUBO", idHillshadeEvaluatedPropsUBO},
@@ -296,6 +304,7 @@ const std::vector<TextureInfo> HillshadeShaderInfo::textures = {
 using ColorReliefShaderInfo = ShaderInfo<BuiltIn::ColorReliefShader, gfx::Backend::Type::OpenGL>;
 
 const std::vector<UniformBlockInfo> ColorReliefShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"GlobalPaintParamsUBO", idGlobalPaintParamsUBO},
     UniformBlockInfo{"ColorReliefDrawableUBO", idColorReliefDrawableUBO},
     UniformBlockInfo{"ColorReliefTilePropsUBO", idColorReliefTilePropsUBO},
     UniformBlockInfo{"ColorReliefEvaluatedPropsUBO", idColorReliefEvaluatedPropsUBO},
@@ -423,10 +432,35 @@ const std::vector<TextureInfo> LineSDFShaderInfo::textures = {
     TextureInfo{"u_image", idLineImageTexture},
 };
 
+// Line gradient SDF
+using LineGradientSDFShaderInfo = ShaderInfo<BuiltIn::LineGradientSDFShader, gfx::Backend::Type::OpenGL>;
+
+const std::vector<UniformBlockInfo> LineGradientSDFShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"GlobalPaintParamsUBO", idGlobalPaintParamsUBO},
+    UniformBlockInfo{"LineSDFDrawableUBO", idLineDrawableUBO},
+    UniformBlockInfo{"LineSDFTilePropsUBO", idLineTilePropsUBO},
+    UniformBlockInfo{"LineEvaluatedPropsUBO", idLineEvaluatedPropsUBO},
+};
+const std::vector<AttributeInfo> LineGradientSDFShaderInfo::attributes = {
+    AttributeInfo{"a_pos_normal", idLinePosNormalVertexAttribute},
+    AttributeInfo{"a_data", idLineDataVertexAttribute},
+    AttributeInfo{"a_blur", idLineBlurVertexAttribute},
+    AttributeInfo{"a_opacity", idLineOpacityVertexAttribute},
+    AttributeInfo{"a_gapwidth", idLineGapWidthVertexAttribute},
+    AttributeInfo{"a_offset", idLineOffsetVertexAttribute},
+    AttributeInfo{"a_width", idLineWidthVertexAttribute},
+    AttributeInfo{"a_floorwidth", idLineFloorWidthVertexAttribute},
+};
+const std::vector<TextureInfo> LineGradientSDFShaderInfo::textures = {
+    TextureInfo{"u_image", idLineImageTexture},
+    TextureInfo{"u_image_dash", idLineDashTexture},
+};
+
 // Raster
 using RasterShaderInfo = ShaderInfo<BuiltIn::RasterShader, gfx::Backend::Type::OpenGL>;
 
 const std::vector<UniformBlockInfo> RasterShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"GlobalPaintParamsUBO", idGlobalPaintParamsUBO},
     UniformBlockInfo{"RasterDrawableUBO", idRasterDrawableUBO},
     UniformBlockInfo{"RasterEvaluatedPropsUBO", idRasterEvaluatedPropsUBO},
 };
@@ -458,6 +492,8 @@ const std::vector<AttributeInfo> SymbolIconShaderInfo::attributes = {
 };
 const std::vector<TextureInfo> SymbolIconShaderInfo::textures = {
     TextureInfo{"u_texture", idSymbolImageTexture},
+    TextureInfo{"u_dem", idSymbolDEMTexture},
+    TextureInfo{"u_depth", idSymbolDepthTexture},
 };
 
 // Symbol SDF
@@ -483,6 +519,8 @@ const std::vector<AttributeInfo> SymbolSDFShaderInfo::attributes = {
 };
 const std::vector<TextureInfo> SymbolSDFShaderInfo::textures = {
     TextureInfo{"u_texture", idSymbolImageTexture},
+    TextureInfo{"u_dem", idSymbolDEMTexture},
+    TextureInfo{"u_depth", idSymbolDepthTexture},
 };
 
 // Symbol Text & Icon
@@ -508,6 +546,42 @@ const std::vector<AttributeInfo> SymbolTextAndIconShaderInfo::attributes = {
 const std::vector<TextureInfo> SymbolTextAndIconShaderInfo::textures = {
     TextureInfo{"u_texture", idSymbolImageTexture},
     TextureInfo{"u_texture_icon", idSymbolImageIconTexture},
+    TextureInfo{"u_dem", idSymbolDEMTexture},
+    TextureInfo{"u_depth", idSymbolDepthTexture},
+};
+
+// Terrain
+using TerrainShaderInfo = ShaderInfo<BuiltIn::TerrainShader, gfx::Backend::Type::OpenGL>;
+
+const std::vector<UniformBlockInfo> TerrainShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"TerrainDrawableUBO", idTerrainDrawableUBO},
+    UniformBlockInfo{"TerrainEvaluatedPropsUBO", idTerrainEvaluatedPropsUBO},
+};
+const std::vector<AttributeInfo> TerrainShaderInfo::attributes = {
+    AttributeInfo{"a_pos", idTerrainPosVertexAttribute},
+    AttributeInfo{"a_texture_pos", idTerrainTexturePosVertexAttribute},
+};
+const std::vector<TextureInfo> TerrainShaderInfo::textures = {
+    TextureInfo{"u_dem", idTerrainDEMTexture},
+    TextureInfo{"u_map", idTerrainMapTexture},
+};
+
+// Terrain Depth
+using TerrainDepthShaderInfo = ShaderInfo<BuiltIn::TerrainDepthShader, gfx::Backend::Type::OpenGL>;
+
+const std::vector<UniformBlockInfo> TerrainDepthShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"TerrainDrawableUBO", idTerrainDrawableUBO},
+    UniformBlockInfo{"TerrainEvaluatedPropsUBO", idTerrainEvaluatedPropsUBO},
+};
+const std::vector<AttributeInfo> TerrainDepthShaderInfo::attributes = {
+    // Only a_pos is a real shader attribute. The instanced depth pass indexes tiles via the
+    // built-in gl_InstanceID, not a per-instance vertex attribute (the GL backend never binds
+    // instance attributes / divisor 1). The C++ instance-attribute array is kept solely as the
+    // instance-count source for DrawableGL::draw; it is not a program attribute here.
+    AttributeInfo{"a_pos", idTerrainPosVertexAttribute},
+};
+const std::vector<TextureInfo> TerrainDepthShaderInfo::textures = {
+    TextureInfo{"u_dem_array", idTerrainDEMArrayTexture},
 };
 
 } // namespace shaders

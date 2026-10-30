@@ -37,10 +37,13 @@ enum class BuiltIn {
     LocationIndicatorShader,
     LocationIndicatorTexturedShader,
     LineSDFShader,
+    LineGradientSDFShader,
     RasterShader,
     SymbolIconShader,
     SymbolSDFShader,
     SymbolTextAndIconShader,
+    TerrainShader,
+    TerrainDepthShader,
     WideVectorShader
 };
 

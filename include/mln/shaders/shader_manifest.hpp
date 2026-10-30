@@ -31,9 +31,12 @@
 #include <mln/shaders/gl/location_indicator.hpp>
 #include <mln/shaders/gl/location_indicator_textured.hpp>
 #include <mln/shaders/gl/line_sdf.hpp>
+#include <mln/shaders/gl/line_gradient_sdf.hpp>
 #include <mln/shaders/gl/raster.hpp>
 #include <mln/shaders/gl/symbol_icon.hpp>
 #include <mln/shaders/gl/symbol_sdf.hpp>
 #include <mln/shaders/gl/symbol_text_and_icon.hpp>
+#include <mln/shaders/gl/terrain.hpp>
+#include <mln/shaders/gl/terrain_depth.hpp>
 #include <mln/shaders/gl/wide_vector.hpp>
 #endif

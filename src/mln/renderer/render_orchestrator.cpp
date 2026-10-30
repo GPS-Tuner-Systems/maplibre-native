@@ -7,7 +7,10 @@
 #include <mln/renderer/render_source.hpp>
 #include <mln/renderer/render_layer.hpp>
 #include <mln/renderer/render_static_data.hpp>
+#include <mln/renderer/render_target.hpp>
 #include <mln/renderer/render_tree.hpp>
+#include <mln/renderer/dem_elevation_provider.hpp>
+#include <mln/renderer/render_terrain.hpp>
 #include <mln/renderer/update_parameters.hpp>
 #include <mln/renderer/upload_parameters.hpp>
 #include <mln/renderer/pattern_atlas.hpp>
@@ -75,7 +78,7 @@ std::set<std::string> diffGlobalStateKeys(const GlobalStateMap& previous, const 
         }
     }
     for (const auto& entry : previous) {
-        if (current.find(entry.first) == current.end()) {
+        if (!current.contains(entry.first)) {
             keys.insert(entry.first);
         }
     }
@@ -250,6 +253,48 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
     if (lightChanged || zoomChanged || globalStateChanged || renderLight.hasTransition()) {
         renderLight.evaluate(evaluationParameters);
     }
+
+    // Update terrain. The per-frame drawable/DEM update happens later in
+    // updateRenderTree once the render sources have been updated; here we only
+    // (re)create or drop the RenderTerrain to match the style.
+    //
+    // Unregister the mesh layer group before dropping a RenderTerrain, on replacement as
+    // well as on removal: the orchestrator holds its own reference and keeps drawing an
+    // orphaned mesh otherwise, and the layer index is a multimap key, so a replacement
+    // stacks up beside the old one rather than evicting it.
+    const auto dropRenderTerrain = [&] {
+        UniqueChangeRequestVec terrainChanges;
+        renderTerrain->deactivate(terrainChanges);
+        addChanges(terrainChanges);
+        renderTerrain.reset();
+    };
+
+    if (updateParameters->terrain) {
+        if (renderTerrain && renderTerrain->getImpl() != *updateParameters->terrain) {
+            dropRenderTerrain();
+        }
+        if (!renderTerrain) {
+            renderTerrain = std::make_unique<RenderTerrain>(*updateParameters->terrain);
+        }
+    } else if (renderTerrain) {
+        dropRenderTerrain();
+    }
+
+    // Let every source's tile cover account for the height of the terrain, so that the
+    // sources are asked for the tiles the terrain mesh will need. Without this the cover
+    // is computed against the flat ground plane and relief leaning towards the camera -
+    // the near edge of the view, at high zoom - is judged off-screen, leaving the mesh
+    // there with an empty drape. Outlives the source update loop below.
+    //
+    // The elevation comes from every DEM tile the source has loaded, not from the ones it
+    // drew last frame: those depend on the cover, so the cover would feed back into itself
+    // and, with a still camera, alternate between two tile sets for good. This way it
+    // changes only when DEM data arrives, and the cover settles.
+    const bool terrainEnabled = renderTerrain && renderTerrain->isEnabled();
+    const DEMElevationProvider elevationProvider{
+        terrainEnabled ? getRenderSource(renderTerrain->getSourceID()) : nullptr,
+        terrainEnabled ? renderTerrain->getExaggeration() : 1.0};
+    tileParameters.elevationProvider = terrainEnabled ? &elevationProvider : nullptr;
 
     const ImageDifference imageDiff = diffImages(imageImpls, updateParameters->images);
     imageImpls = updateParameters->images;
@@ -472,6 +517,11 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
                 updateList[index] = true;
             }
         }
+        // Mark DEM source as needed for terrain rendering
+        if (renderTerrain && renderTerrain->isEnabled() && sourceImpl->id == renderTerrain->getSourceID()) {
+            sourceNeedsRendering = true;
+        }
+
         tileParameters.isUpdateSynchronous = sourceImpl->isUpdateSynchronous();
         source->update(sourceImpl, filteredLayersForSource, sourceNeedsRendering, sourceNeedsRelayout, tileParameters);
         filteredLayersForSource.clear();
@@ -483,6 +533,11 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
             }
         }
         addChanges(changes);
+    }
+
+    // Enable 3D mode if terrain is present
+    if (renderTerrain && renderTerrain->isEnabled()) {
+        renderTreeParameters->has3D = true;
     }
 
     renderTreeParameters->loaded = updateParameters->styleLoaded && isLoaded();
@@ -511,7 +566,8 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
                              .imageManager = *imageManager,
                              .patternAtlas = *patternAtlas,
                              .lineAtlas = *lineAtlas,
-                             .state = updateParameters->transformState});
+                             .state = updateParameters->transformState,
+                             .terrain = terrainEnabled});
         if (renderLayer.needsPlacement()) {
             layersNeedPlacement.emplace_back(renderLayer);
         }
@@ -1011,7 +1067,8 @@ void RenderOrchestrator::updateLayers(gfx::ShaderRegistry& shaders,
                                       const TransformState& state,
                                       const std::shared_ptr<UpdateParameters>& updateParameters,
                                       const PaintParameters& paintParameters,
-                                      const RenderTree& renderTree) {
+                                      const RenderTree& renderTree,
+                                      const TexturePool& texturePool) {
     MLN_TRACE_FUNC();
 
     const bool isMapModeContinuous = updateParameters->mode == MapMode::Continuous;
@@ -1028,6 +1085,13 @@ void RenderOrchestrator::updateLayers(gfx::ShaderRegistry& shaders,
 
     std::vector<std::unique_ptr<ChangeRequest>> changes;
     changes.reserve(items.size() * 3);
+
+    // Progressive tile build: cap how many new tiles construct their drawables this frame so
+    // a burst of newly revealed tiles (tilt/pan/zoom-in) is spread over frames instead of
+    // stalling one. Layers consume from this budget before building a new tile (fill/line).
+    // The cap comes from the map's TerrainLoadMode; Quality (default) is unlimited.
+    const int tileBuildBudget = terrainLoadBudget(updateParameters->terrainLoadMode).newTileBuildsPerFrame;
+    context.resetNewTileBuildBudget(tileBuildBudget > 0 ? tileBuildBudget : (1 << 30));
 
     gfx::RenderingStats::FrameRenderedFeaturesMap allFeatures;
     allFeatures.reserve(items.size());
@@ -1062,6 +1126,12 @@ void RenderOrchestrator::updateLayers(gfx::ShaderRegistry& shaders,
             renderLayer.stats.renderedFeatures.clear();
         }
     }
+
+    // Update terrain if enabled
+    if (renderTerrain && renderTerrain->isEnabled()) {
+        renderTerrain->update(*this, shaders, context, texturePool, state, updateParameters, renderTree, changes);
+    }
+
     addChanges(changes);
 
     std::swap(frameRenderedFeatures, allFeatures);
@@ -1092,6 +1162,27 @@ bool RenderOrchestrator::removeRenderTarget(const RenderTargetPtr& renderTarget)
     } else {
         return false;
     }
+}
+
+void RenderOrchestrator::addRenderTargets(const TexturePool& texturePool) {
+    // The pool owns the terrain drape targets and drops them when their tile leaves
+    // the cover, so rebuild our drape entries from it each frame. Merely adding
+    // would keep every drape target ever created alive here, rendering forever.
+    //
+    // Non-drape targets (the hillshade prepare targets, added by change request) are
+    // owned by their tile's bucket. When only this list still references one, the
+    // bucket has been evicted, so drop it here too; otherwise its offscreen (prepare)
+    // and DEM input textures leak as hillshade tiles cycle in and out of the cover.
+    renderTargets.erase(std::remove_if(renderTargets.begin(),
+                                       renderTargets.end(),
+                                       [](const RenderTargetPtr& renderTarget) {
+                                           if (!renderTarget) return true;
+                                           if (renderTarget->getDrapeTileID().has_value()) return true;
+                                           return renderTarget.use_count() == 1;
+                                       }),
+                        renderTargets.end());
+    texturePool.visitRenderTargets(
+        [&](const RenderTargetPtr& renderTarget) { renderTargets.emplace_back(renderTarget); });
 }
 
 void RenderOrchestrator::updateDebugLayerGroups(const RenderTree& renderTree, PaintParameters& parameters) {

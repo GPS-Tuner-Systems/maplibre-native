@@ -27,6 +27,8 @@
 #include <mln/shaders/mtl/location_indicator.hpp>
 #include <mln/shaders/mtl/raster.hpp>
 #include <mln/shaders/mtl/symbol.hpp>
+#include <mln/shaders/mtl/terrain.hpp>
+#include <mln/shaders/mtl/terrain_depth.hpp>
 #include <mln/shaders/mtl/widevector.hpp>
 
 #include <cassert>
@@ -108,6 +110,7 @@ void RendererBackend::initShaders(gfx::ShaderRegistry& shaders, const ProgramPar
                   shaders::BuiltIn::LineShader,
                   shaders::BuiltIn::LineGradientShader,
                   shaders::BuiltIn::LineSDFShader,
+                  shaders::BuiltIn::LineGradientSDFShader,
                   shaders::BuiltIn::LinePatternShader,
                   shaders::BuiltIn::LocationIndicatorShader,
                   shaders::BuiltIn::LocationIndicatorTexturedShader,
@@ -115,6 +118,8 @@ void RendererBackend::initShaders(gfx::ShaderRegistry& shaders, const ProgramPar
                   shaders::BuiltIn::SymbolIconShader,
                   shaders::BuiltIn::SymbolSDFShader,
                   shaders::BuiltIn::SymbolTextAndIconShader,
+                  shaders::BuiltIn::TerrainShader,
+                  shaders::BuiltIn::TerrainDepthShader,
                   shaders::BuiltIn::WideVectorShader>(shaders, programParameters);
 }
 

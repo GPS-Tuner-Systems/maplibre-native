@@ -224,8 +224,17 @@ void LineLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParameters
         const auto anchor = evaluated.get<LineTranslateAnchor>();
         constexpr bool nearClipped = false;
         constexpr bool inViewportPixelUnits = false; // from RenderTile::translatedMatrix
-        const auto matrix = getTileMatrix(
-            tileID, parameters, translation, anchor, nearClipped, inViewportPixelUnits, drawable);
+        bool renderingToTerrain = false;
+        const auto matrix = getTileMatrix(tileID,
+                                          parameters,
+                                          translation,
+                                          anchor,
+                                          nearClipped,
+                                          inViewportPixelUnits,
+                                          drawable,
+                                          /*aligned=*/false,
+                                          /*renderToTerrain=*/true,
+                                          &renderingToTerrain);
 
 #if !MLN_UBO_CONSOLIDATION
         auto& drawableUniforms = drawable.mutableUniformBuffers();
@@ -246,7 +255,7 @@ void LineLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParameters
                     .gapwidth_t = std::get<0>(binders->get<LineGapWidth>()->interpolationFactor(zoom)),
                     .offset_t = std::get<0>(binders->get<LineOffset>()->interpolationFactor(zoom)),
                     .width_t = std::get<0>(binders->get<LineWidth>()->interpolationFactor(zoom)),
-                    .pad1 = 0
+                    .pad1 = renderingToTerrain ? 1.0f : 0.0f
                 };
 
 #if !MLN_UBO_CONSOLIDATION
@@ -328,7 +337,8 @@ void LineLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParameters
 #endif
             } break;
 
-            case LineType::SDF: {
+            case LineType::SDF:
+            case LineType::GradientSDF: {
                 if (const auto& data = drawable.getData()) {
                     const gfx::LineDrawableData& lineData = static_cast<const gfx::LineDrawableData&>(*data);
                     const auto& dashPatternTexture = parameters.lineAtlas.getDashPatternTexture(
@@ -336,12 +346,15 @@ void LineLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParameters
                         evaluated.get<LineDasharray>().to,
                         lineData.linePatternCap);
 
-                    // texture
-                    if (!drawable.getTexture(idLineImageTexture)) {
+                    // The gradient variant keeps its ramp in the image slot, so the dash atlas takes the second.
+                    const auto dashTextureId = static_cast<LineType>(drawable.getType()) == LineType::GradientSDF
+                                                   ? idLineDashTexture
+                                                   : idLineImageTexture;
+                    if (!drawable.getTexture(dashTextureId)) {
                         const auto& texture = dashPatternTexture.getTexture();
                         drawable.setEnabled(!!texture);
                         if (texture) {
-                            drawable.setTexture(texture, idLineImageTexture);
+                            drawable.setTexture(texture, dashTextureId);
                         }
                     }
 

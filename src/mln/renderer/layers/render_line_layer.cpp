@@ -334,7 +334,7 @@ void RenderLineLayer::update(gfx::ShaderRegistry& shaders,
 
     // Set up a layer group
     if (!layerGroup) {
-        if (auto layerGroup_ = context.createTileLayerGroup(layerIndex, /*initialCapacity=*/64, getID())) {
+        if (auto layerGroup_ = context.createTileLayerGroup(layerIndex, /*initialCapacity=*/64, getID(), true)) {
             setLayerGroup(std::move(layerGroup_), changes);
         } else {
             return;
@@ -405,6 +405,17 @@ void RenderLineLayer::update(gfx::ShaderRegistry& shaders,
 
     tileLayerGroup->setStencilTiles(renderTiles);
 
+    // The ramp texture is shared by every tile of the layer.
+    const auto ensureColorRampTexture = [&] {
+        if (!colorRampTexture2D && colorRamp->valid()) {
+            colorRampTexture2D = context.createTexture2D();
+            colorRampTexture2D->setImage(colorRamp);
+            colorRampTexture2D->setSamplerConfiguration({.filter = gfx::TextureFilterType::Linear,
+                                                         .wrapU = gfx::TextureWrapType::Clamp,
+                                                         .wrapV = gfx::TextureWrapType::Clamp});
+        }
+    };
+
     StringIDSetsPair propertiesAsUniforms;
     for (const RenderTile& tile : *renderTiles) {
         const auto& tileID = tile.getOverscaledTileID();
@@ -447,6 +458,13 @@ void RenderLineLayer::update(gfx::ShaderRegistry& shaders,
             continue;
         }
 
+        // Progressive build budget: new tile (no drawables yet). Defer its construction when
+        // the per-frame tile budget is spent; retried next frame (follow-up frame requested),
+        // with the terrain drape keeping the parent/prior texture meanwhile.
+        if (!context.allowNewTileBuild(std::hash<OverscaledTileID>{}(tileID))) {
+            continue;
+        }
+
         const auto addDrawable = [&](std::unique_ptr<gfx::Drawable>&& drawable, LineLayerTweaker::LineType type) {
             drawable->setTileID(tileID);
             drawable->setType(mln::underlying_type(type));
@@ -476,7 +494,38 @@ void RenderLineLayer::update(gfx::ShaderRegistry& shaders,
                                                    LinePattern>(
             paintPropertyBinders, evaluated, propertiesAsUniforms, idLineColorVertexAttribute);
 
-        if (!evaluated.get<LineDasharray>().from.empty()) {
+        if (!evaluated.get<LineDasharray>().from.empty() && !unevaluated.get<LineGradient>().getValue().isUndefined()) {
+            // dash array over a gradient
+            if (!lineGradientSDFShaderGroup) {
+                lineGradientSDFShaderGroup = shaders.getShaderGroup("LineGradientSDFShader");
+                if (!lineGradientSDFShaderGroup) {
+                    continue;
+                }
+            }
+
+            auto shader = lineGradientSDFShaderGroup->getOrCreateShader(
+                context, propertiesAsUniforms, posNormalAttribName);
+            if (!shader) {
+                continue;
+            }
+
+            auto builder = createLineBuilder("lineGradientSDF", std::move(shader));
+
+            // vertices and attributes
+            addAttributes(*builder, bucket, std::move(vertexAttrs));
+
+            ensureColorRampTexture();
+            if (colorRampTexture2D) {
+                builder->setTexture(colorRampTexture2D, idLineImageTexture);
+
+                setSegments(builder, bucket);
+
+                builder->flush(context);
+                for (auto& drawable : builder->clearDrawables()) {
+                    addDrawable(std::move(drawable), LineLayerTweaker::LineType::GradientSDF);
+                }
+            }
+        } else if (!evaluated.get<LineDasharray>().from.empty()) {
             // dash array line (SDF)
             if (!lineSDFShaderGroup) {
                 lineSDFShaderGroup = shaders.getShaderGroup("LineSDFShader");
@@ -560,16 +609,7 @@ void RenderLineLayer::update(gfx::ShaderRegistry& shaders,
             // vertices and attributes
             addAttributes(*builder, bucket, std::move(vertexAttrs));
 
-            // texture
-            if (!colorRampTexture2D && colorRamp->valid()) {
-                // create texture. to be reused for all the tiles of the layer
-                colorRampTexture2D = context.createTexture2D();
-                colorRampTexture2D->setImage(colorRamp);
-                colorRampTexture2D->setSamplerConfiguration({.filter = gfx::TextureFilterType::Linear,
-                                                             .wrapU = gfx::TextureWrapType::Clamp,
-                                                             .wrapV = gfx::TextureWrapType::Clamp});
-            }
-
+            ensureColorRampTexture();
             if (colorRampTexture2D) {
                 builder->setTexture(colorRampTexture2D, idLineImageTexture);
 

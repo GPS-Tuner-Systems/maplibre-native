@@ -21,6 +21,7 @@
 #include <mln/util/instrumentation.hpp>
 
 #include <cassert>
+#include <optional>
 #if !defined(NDEBUG)
 #include <sstream>
 #endif
@@ -272,7 +273,7 @@ void Drawable::upload(gfx::UploadPass& uploadPass_) {
     }
 
     if (buildAttribs || buildInstanceBuffer) {
-        buildVulkanInputBindings();
+        buildVulkanInputBindings(static_cast<Context&>(uploadPass.getContext()));
     }
 
     const bool texturesNeedUpload = std::any_of(
@@ -303,12 +304,20 @@ void Drawable::draw(PaintParameters& parameters) const {
     if (!bindAttributes(encoder)) return;
     if (!bindDescriptors(encoder)) return;
 
+    // ubo_index plus the current drape target tile (w != 0 only while recording
+    // into a terrain drape target); layout matches the shaders' push_constant block
+    struct {
+        uint32_t uboIndex;
+        float pad[3];
+        std::array<float, 4> drapeTile;
+    } pushData{uboIndex, {0, 0, 0}, parameters.currentDrapeTile};
+    static_assert(sizeof(pushData) == 32);
     commandBuffer->pushConstants(
         context.getGeneralPipelineLayout().get(),
         vk::ShaderStageFlags() | vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
         0,
-        sizeof(uboIndex),
-        &uboIndex,
+        sizeof(pushData),
+        &pushData,
         dispatcher);
 
     if (enableDepth) {
@@ -417,7 +426,7 @@ void Drawable::setSharedBuffers(const gfx::VertexAttributeArray& attribs, const 
         }
 
         const auto& binding = bindings[vkAttrib.getIndex()];
-        if (!binding) {
+        if (!binding || !binding->vertexBufferResource) {
             return;
         }
 
@@ -426,7 +435,7 @@ void Drawable::setSharedBuffers(const gfx::VertexAttributeArray& attribs, const 
     });
 }
 
-void Drawable::buildVulkanInputBindings() {
+void Drawable::buildVulkanInputBindings(Context& context) {
     MLN_TRACE_FUNC();
 
     impl->vulkanVertexBuffers.clear();
@@ -436,11 +445,40 @@ void Drawable::buildVulkanInputBindings() {
     impl->pipelineInfo.inputBindings.clear();
 
     std::vector<const gfx::VertexBufferResource*> uniqueBuffers;
+    std::optional<uint32_t> dummyBindingIndex;
 
     const auto buildBindings = [&](const gfx::AttributeBindingArray& bindings, vk::VertexInputRate inputRate) {
         for (size_t i = 0; i < bindings.size(); ++i) {
             const auto& binding = bindings[i];
-            if (!binding.has_value() || !binding->vertexBufferResource) continue;
+            if (!binding.has_value()) {
+                continue;
+            }
+
+            if (!binding->vertexBufferResource) {
+                // back missing attributes with a zero-stride dummy buffer that reads a constant value
+                if (!dummyBindingIndex) {
+                    dummyBindingIndex = static_cast<uint32_t>(impl->pipelineInfo.inputBindings.size());
+
+                    // sync `uniqueBuffers` with `inputBindings`
+                    uniqueBuffers.push_back(nullptr);
+
+                    impl->pipelineInfo.inputBindings.push_back(vk::VertexInputBindingDescription()
+                                                                   .setBinding(*dummyBindingIndex)
+                                                                   .setStride(0)
+                                                                   .setInputRate(inputRate));
+
+                    impl->vulkanVertexBuffers.push_back(context.getDummyBuffer()->getVulkanBuffer());
+                    impl->vulkanVertexOffsets.push_back(0u);
+                }
+
+                impl->pipelineInfo.inputAttributes.push_back(
+                    vk::VertexInputAttributeDescription()
+                        .setBinding(*dummyBindingIndex)
+                        .setLocation(static_cast<uint32_t>(i))
+                        .setFormat(PipelineInfo::vulkanFormat(binding->attribute.dataType))
+                        .setOffset(0));
+                continue;
+            }
 
             const auto& vertexBuffer = static_cast<const VertexBufferResource*>(binding->vertexBufferResource);
             const auto& buffer = vertexBuffer->get();

@@ -36,10 +36,13 @@ MBGL_DEFINE_ENUM(BuiltIn,
                   {BuiltIn::LocationIndicatorShader, "LocationIndicatorShader"},
                   {BuiltIn::LocationIndicatorTexturedShader, "LocationIndicatorTexturedShader"},
                   {BuiltIn::LineSDFShader, "LineSDFShader"},
+                  {BuiltIn::LineGradientSDFShader, "LineGradientSDFShader"},
                   {BuiltIn::RasterShader, "RasterShader"},
                   {BuiltIn::SymbolIconShader, "SymbolIconShader"},
                   {BuiltIn::SymbolSDFShader, "SymbolSDFShader"},
                   {BuiltIn::SymbolTextAndIconShader, "SymbolTextAndIconShader"},
+                  {BuiltIn::TerrainShader, "TerrainShader"},
+                  {BuiltIn::TerrainDepthShader, "TerrainDepthShader"},
                   {BuiltIn::WideVectorShader, "WideVectorShader"}});
 
 } // namespace mln

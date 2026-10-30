@@ -61,18 +61,37 @@ public:
 
     void bind() override {
         assert(context.getBackend().getCommandQueue());
-        commandBuffer = NS::RetainPtr(context.getBackend().getCommandQueue()->commandBuffer());
+        // An upload pass and a render pass both bind this resource in one frame, and only the swap
+        // after the render pass commits. Keep the pending command buffer: a new one per bind leaves
+        // the previous one uncommitted, one per frame, until the queue has none left to hand out.
+        if (!commandBuffer) {
+            commandBuffer = NS::RetainPtr(context.getBackend().getCommandQueue()->commandBuffer());
+        }
         colorTexture->create();
 
         renderPassDescriptor = NS::TransferPtr(MTL::RenderPassDescriptor::alloc()->init());
         if (auto* colorTarget = renderPassDescriptor->colorAttachments()->object(0)) {
             colorTarget->setTexture(static_cast<Texture2D*>(colorTexture.get())->getMetalTexture());
+            // An offscreen texture exists to be sampled afterwards, so its colour
+            // MUST be written back to the texture. Metal defaults a colour
+            // attachment to MTL::StoreActionDontCare, which on a tile-based GPU
+            // leaves the resolved texture undefined once the pass ends. Depth
+            // below is deliberately DontCare - it is not read back.
+            // (Committed while chasing the black terrain bands, which turned out
+            // to be the missing 3D depth state in mtl::LayerGroup; this changed
+            // nothing there, but relying on the default is undefined behaviour
+            // regardless, so it stays.)
+            colorTarget->setStoreAction(MTL::StoreActionStore);
         }
 
         if (depthTexture) {
             depthTexture->create();
             if (auto* depthTarget = renderPassDescriptor->depthAttachment()) {
                 depthTarget->setTexture(static_cast<Texture2D*>(depthTexture.get())->getMetalTexture());
+                // Clear depth each frame; the drape's depth buffer is not read back.
+                depthTarget->setLoadAction(MTL::LoadActionClear);
+                depthTarget->setClearDepth(1.0);
+                depthTarget->setStoreAction(MTL::StoreActionDontCare);
             }
         }
         if (stencilTexture) {
