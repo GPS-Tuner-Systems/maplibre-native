@@ -180,9 +180,10 @@ void LayerGroupGL::render(RenderOrchestrator&, PaintParameters& parameters) {
 
     auto& context = static_cast<gl::Context&>(parameters.context);
     parameters.stencilClippingAvailable = parameters.renderTargetHasStencilBuffer;
-    if (!parameters.stencilClippingAvailable) {
-        context.setStencilMode(gfx::StencilMode::disabled());
-    }
+    // Always start from a disabled stencil test: 3D drawables (e.g. the terrain mesh) do not set a
+    // stencil mode themselves and would otherwise inherit the previous draw's tile clipping test,
+    // dropping the whole mesh on frames where that test fails. 2D drawables set their own mode.
+    context.setStencilMode(gfx::StencilMode::disabled());
 
     bool bindUBOs = false;
     visitDrawables([&](gfx::Drawable& drawable) {
