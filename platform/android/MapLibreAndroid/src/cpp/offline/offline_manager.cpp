@@ -1,12 +1,12 @@
 #include "offline_manager.hpp"
 
-#include <mbgl/storage/file_source_manager.hpp>
-#include <mbgl/storage/resource.hpp>
-#include <mbgl/util/string.hpp>
+#include <mln/storage/file_source_manager.hpp>
+#include <mln/storage/resource.hpp>
+#include <mln/util/string.hpp>
 
 #include "attach_env.hpp"
 
-namespace mbgl {
+namespace mln {
 namespace android {
 
 namespace {
@@ -16,7 +16,7 @@ void handleException(std::exception_ptr exception,
                      android::UniqueEnv env = android::AttachEnv()) {
     if (exception) {
         OfflineManager::FileSourceCallback::onError(
-            *env, callback, jni::Make<jni::String>(*env, mbgl::util::toString(exception)));
+            *env, callback, jni::Make<jni::String>(*env, mln::util::toString(exception)));
     } else {
         OfflineManager::FileSourceCallback::onSuccess(*env, callback);
     }
@@ -25,10 +25,10 @@ void handleException(std::exception_ptr exception,
 
 // OfflineManager //
 OfflineManager::OfflineManager(jni::JNIEnv& env, const jni::Object<FileSource>& jFileSource)
-    : fileSource(std::static_pointer_cast<mbgl::DatabaseFileSource>(std::shared_ptr<mbgl::FileSource>(
-          mbgl::FileSourceManager::get()->getFileSource(mbgl::FileSourceType::Database,
-                                                        FileSource::getSharedResourceOptions(env, jFileSource),
-                                                        FileSource::getSharedClientOptions(env, jFileSource))))) {
+    : fileSource(std::static_pointer_cast<mln::DatabaseFileSource>(std::shared_ptr<mln::FileSource>(
+          mln::FileSourceManager::get()->getFileSource(mln::FileSourceType::Database,
+                                                       FileSource::getSharedResourceOptions(env, jFileSource),
+                                                       FileSource::getSharedClientOptions(env, jFileSource))))) {
     if (!fileSource) {
         ThrowNew(env, jni::FindClass(env, "java/lang/IllegalStateException"), "Offline functionality is disabled.");
     }
@@ -52,7 +52,7 @@ void OfflineManager::listOfflineRegions(jni::JNIEnv& env_,
             // source so they are not GC'd in the meanwhile
             callback = std::make_shared<decltype(globalCallback)>(std::move(globalCallback)),
             jFileSource = std::make_shared<decltype(globalFilesource)>(std::move(globalFilesource))](
-            mbgl::expected<mbgl::OfflineRegions, std::exception_ptr> regions) mutable {
+            mln::expected<mln::OfflineRegions, std::exception_ptr> regions) mutable {
             // Reattach, the callback comes from a different thread
             android::UniqueEnv env = android::AttachEnv();
 
@@ -77,7 +77,7 @@ void OfflineManager::getOfflineRegion(jni::JNIEnv& env_,
             // source so they are not GC'd in the meanwhile
             callback = std::make_shared<decltype(globalCallback)>(std::move(globalCallback)),
             jFileSource = std::make_shared<decltype(globalFilesource)>(std::move(globalFilesource)),
-            regionID](mbgl::expected<std::optional<mbgl::OfflineRegion>, std::exception_ptr> result) mutable {
+            regionID](mln::expected<std::optional<mln::OfflineRegion>, std::exception_ptr> result) mutable {
             // Reattach, the callback comes from a different thread
             android::UniqueEnv env = android::AttachEnv();
 
@@ -102,7 +102,7 @@ void OfflineManager::createOfflineRegion(jni::JNIEnv& env_,
     // Convert
     auto definition = OfflineRegionDefinition::getDefinition(env_, definition_);
 
-    mbgl::OfflineRegionMetadata metadata;
+    mln::OfflineRegionMetadata metadata;
     if (metadata_) {
         metadata = OfflineRegion::metadata(env_, metadata_);
     }
@@ -119,7 +119,7 @@ void OfflineManager::createOfflineRegion(jni::JNIEnv& env_,
             // source so they are not GC'd in the meanwhile
             callback = std::make_shared<decltype(globalCallback)>(std::move(globalCallback)),
             jFileSource = std::make_shared<decltype(globalFilesource)>(std::move(globalFilesource))](
-            mbgl::expected<mbgl::OfflineRegion, std::exception_ptr> region) mutable {
+            mln::expected<mln::OfflineRegion, std::exception_ptr> region) mutable {
             // Reattach, the callback comes from a different thread
             android::UniqueEnv env = android::AttachEnv();
 
@@ -146,7 +146,7 @@ void OfflineManager::mergeOfflineRegions(jni::JNIEnv& env_,
             // source so they are not GC'd in the meanwhile
             callback = std::make_shared<decltype(globalCallback)>(std::move(globalCallback)),
             jFileSource = std::make_shared<decltype(globalFilesource)>(std::move(globalFilesource))](
-            mbgl::expected<mbgl::OfflineRegions, std::exception_ptr> regions) mutable {
+            mln::expected<mln::OfflineRegions, std::exception_ptr> regions) mutable {
             // Reattach, the callback comes from a different thread
             android::UniqueEnv env = android::AttachEnv();
 
@@ -276,14 +276,14 @@ void OfflineManager::ListOfflineRegionsCallback::onError(
     static auto& javaClass = jni::Class<OfflineManager::ListOfflineRegionsCallback>::Singleton(env);
     static auto method = javaClass.GetMethod<void(jni::String)>(env, "onError");
 
-    callback.Call(env, method, jni::Make<jni::String>(env, mbgl::util::toString(error)));
+    callback.Call(env, method, jni::Make<jni::String>(env, mln::util::toString(error)));
 }
 
 void OfflineManager::ListOfflineRegionsCallback::onList(
     jni::JNIEnv& env,
     const jni::Object<FileSource>& jFileSource,
     const jni::Object<OfflineManager::ListOfflineRegionsCallback>& callback,
-    mbgl::OfflineRegions& regions) {
+    mln::OfflineRegions& regions) {
     static auto& javaClass = jni::Class<OfflineManager::ListOfflineRegionsCallback>::Singleton(env);
     static auto method = javaClass.GetMethod<void(jni::Array<jni::Object<OfflineRegion>>)>(env, "onList");
 
@@ -304,7 +304,7 @@ void OfflineManager::GetOfflineRegionCallback::onError(
     static auto& javaClass = jni::Class<OfflineManager::GetOfflineRegionCallback>::Singleton(env);
     static auto method = javaClass.GetMethod<void(jni::String)>(env, "onError");
 
-    callback.Call(env, method, jni::Make<jni::String>(env, mbgl::util::toString(error)));
+    callback.Call(env, method, jni::Make<jni::String>(env, mln::util::toString(error)));
 }
 
 void OfflineManager::GetOfflineRegionCallback::onRegionNotFound(
@@ -321,7 +321,7 @@ void OfflineManager::GetOfflineRegionCallback::onRegion(
     jni::JNIEnv& env,
     const jni::Object<FileSource>& jFileSource,
     const jni::Object<OfflineManager::GetOfflineRegionCallback>& callback,
-    mbgl::OfflineRegion& region) {
+    mln::OfflineRegion& region) {
     static auto& javaClass = jni::Class<OfflineManager::GetOfflineRegionCallback>::Singleton(env);
     static auto method = javaClass.GetMethod<void(jni::Object<OfflineRegion>)>(env, "onRegion");
 
@@ -337,14 +337,14 @@ void OfflineManager::CreateOfflineRegionCallback::onError(
     static auto& javaClass = jni::Class<OfflineManager::CreateOfflineRegionCallback>::Singleton(env);
     static auto method = javaClass.GetMethod<void(jni::String)>(env, "onError");
 
-    callback.Call(env, method, jni::Make<jni::String>(env, mbgl::util::toString(error)));
+    callback.Call(env, method, jni::Make<jni::String>(env, mln::util::toString(error)));
 }
 
 void OfflineManager::CreateOfflineRegionCallback::onCreate(
     jni::JNIEnv& env,
     const jni::Object<FileSource>& jFileSource,
     const jni::Object<OfflineManager::CreateOfflineRegionCallback>& callback,
-    mbgl::OfflineRegion& region) {
+    mln::OfflineRegion& region) {
     static auto& javaClass = jni::Class<OfflineManager::CreateOfflineRegionCallback>::Singleton(env);
     static auto method = javaClass.GetMethod<void(jni::Object<OfflineRegion>)>(env, "onCreate");
 
@@ -360,13 +360,13 @@ void OfflineManager::MergeOfflineRegionsCallback::onError(
     static auto& javaClass = jni::Class<OfflineManager::MergeOfflineRegionsCallback>::Singleton(env);
     static auto method = javaClass.GetMethod<void(jni::String)>(env, "onError");
 
-    callback.Call(env, method, jni::Make<jni::String>(env, mbgl::util::toString(error)));
+    callback.Call(env, method, jni::Make<jni::String>(env, mln::util::toString(error)));
 }
 
 void OfflineManager::MergeOfflineRegionsCallback::onMerge(jni::JNIEnv& env,
                                                           const jni::Object<FileSource>& jFileSource,
                                                           const jni::Object<MergeOfflineRegionsCallback>& callback,
-                                                          mbgl::OfflineRegions& regions) {
+                                                          mln::OfflineRegions& regions) {
     static auto& javaClass = jni::Class<OfflineManager::MergeOfflineRegionsCallback>::Singleton(env);
     static auto method = javaClass.GetMethod<void(jni::Array<jni::Object<OfflineRegion>>)>(env, "onMerge");
 
@@ -390,18 +390,18 @@ void OfflineManager::putResourceWithUrl(jni::JNIEnv& env,
     auto url = jni::Make<std::string>(env, url_);
     auto data = std::make_shared<std::string>(arr.Length(env), char());
     jni::GetArrayRegion(env, *arr, 0, data->size(), reinterpret_cast<jbyte*>(&(*data)[0]));
-    mbgl::Resource resource(mbgl::Resource::Kind::Unknown, url);
-    mbgl::Response response;
+    mln::Resource resource(mln::Resource::Kind::Unknown, url);
+    mln::Response response;
     response.data = data;
     response.mustRevalidate = mustRevalidate;
     if (eTag_) {
         response.etag = jni::Make<std::string>(env, eTag_);
     }
     if (modified > 0) {
-        response.modified = Timestamp(mbgl::Seconds(modified));
+        response.modified = Timestamp(mln::Seconds(modified));
     }
     if (expires > 0) {
-        response.expires = Timestamp(mbgl::Seconds(expires));
+        response.expires = Timestamp(mln::Seconds(expires));
     }
 
     fileSource->put(resource, response);
@@ -421,14 +421,14 @@ void OfflineManager::putTileResource( jni::JNIEnv& env_,
     auto data = std::make_shared<std::string>(arr.Length(env_), char());
     jni::GetArrayRegion(env_, *arr, 0, data->size(), reinterpret_cast<jbyte*>(&(*data)[0]));
 
-    mbgl::Resource::TileData tile;
+    mln::Resource::TileData tile;
     tile.urlTemplate = url;
     tile.pixelRatio = pixelRatio;
     tile.x = x;
     tile.y = y;
     tile.z = z;
-    mbgl::Resource resource(mbgl::Resource::Kind::Tile, url, tile );
-    mbgl::Response response;
+    mln::Resource resource(mln::Resource::Kind::Tile, url, tile );
+    mln::Response response;
     response.data = data;
 
     fileSource->forward(resource, response, [
@@ -441,4 +441,4 @@ void OfflineManager::putTileResource( jni::JNIEnv& env_,
 }
 
 } // namespace android
-} // namespace mbgl
+} // namespace mln

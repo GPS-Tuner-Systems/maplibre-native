@@ -63,19 +63,20 @@ jobs:
   build:
     name: MacOS Metal CI Tests
     runs-on: [macos-15]
+    timeout-minutes: 210
     defaults:
       run:
         working-directory: platform/macos
         shell: bash
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Cache Bazel
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           key: ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') }}
           restore-keys: |
@@ -90,12 +91,16 @@ jobs:
       - name: Build AppKit app, GLFW app, cache tool, render tool for macOS
         run: bazel build //platform/macos/app:macos_app //platform/glfw:glfw_app //bin:cache_tool //bin:render_tool --//:renderer=metal
 
+      - name: Check public symbol exports
+        run: bazel test //platform:check-public-symbols-macos --test_output=errors --//:renderer=metal
+
       - name: Generate Xcode project for macOS
         run: bazel run //platform/macos:xcodeproj --@rules_xcodeproj//xcodeproj:extra_common_flags="--//:renderer=metal"
 
   webgpu-cmake:
     name: macOS WebGPU (${{ matrix.variant.name }})
     runs-on: macos-15
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -106,7 +111,7 @@ jobs:
             name: wgpu
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
@@ -155,7 +160,7 @@ jobs:
 
       - name: Upload render report
         if: always() && steps.render_test.outcome == 'failure'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: macos-webgpu-${{ matrix.variant.impl }}-render-report
           path: metrics/macos-webgpu-${{ matrix.variant.impl }}.html

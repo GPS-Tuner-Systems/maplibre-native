@@ -19,12 +19,12 @@ fun obtainTestBuildType(): String {
 android {
     ndkVersion = Versions.ndkVersion
 
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "org.maplibre.android.testapp"
         minSdk = 23
-        targetSdk = 33
+        targetSdk = 35
         versionCode = 14
         testInstrumentationRunner = "org.maplibre.android.InstrumentationRunner"
         multiDexEnabled = true
@@ -34,7 +34,7 @@ android {
         manifestPlaceholders["SENTRY_ENV"] = ""
     }
 
-    nativeBuild(listOf("example-custom-layer"))
+    nativeBuild(emptyList())
 
     packaging {
         resources.excludes += listOf("META-INF/LICENSE.txt", "META-INF/NOTICE.txt", "LICENSE.txt")
@@ -82,7 +82,8 @@ android {
             dimension = "renderer"
             externalNativeBuild {
                 cmake {
-                    arguments("-DMLN_WITH_OPENGL=ON")
+                    arguments += "-DMLN_WITH_OPENGL=ON"
+                    targets += "example-custom-layer"
                 }
             }
         }
@@ -90,7 +91,8 @@ android {
             dimension = "renderer"
             externalNativeBuild {
                 cmake {
-                    arguments("-DMLN_WITH_VULKAN=ON")
+                    arguments += "-DMLN_WITH_VULKAN=ON"
+                    targets += "example-vulkan-custom-layer"
                 }
             }
         }
@@ -110,6 +112,15 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments("-DMLN_WITH_WEBGPU=ON", "-DMLN_WEBGPU_IMPL_WGPU=ON")
+                }
+            }
+        }
+        create("multiBackend") {
+            dimension = "renderer"
+            externalNativeBuild {
+                cmake {
+                    arguments("-DMLN_ANDROID_MULTI_BACKEND=ON")
+                    targets("maplibre-opengl", "maplibre-vulkan")
                 }
             }
         }
@@ -144,9 +155,12 @@ dependencies {
 
     implementation(libs.maplibreJavaTurf)
 
+    implementation(libs.sentryAndroid)
+
     implementation(libs.supportRecyclerView)
     implementation(libs.supportPrint)
     implementation(libs.supportDesign)
+    implementation(libs.supportAppcompat)
     implementation(libs.supportConstraintLayout)
     implementation(libs.kotlinxSerializationJson)
 

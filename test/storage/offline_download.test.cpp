@@ -1,24 +1,25 @@
-#include <mbgl/test/map_adapter.hpp>
-#include <mbgl/test/stub_file_source.hpp>
-#include <mbgl/test/fake_file_source.hpp>
-#include <mbgl/test/stub_map_observer.hpp>
-#include <mbgl/test/fixture_log_observer.hpp>
-#include <mbgl/test/sqlite3_test_fs.hpp>
+#include <mln/test/map_adapter.hpp>
+#include <mln/test/stub_file_source.hpp>
+#include <mln/test/fake_file_source.hpp>
+#include <mln/test/stub_map_observer.hpp>
+#include <mln/test/fixture_log_observer.hpp>
+#include <mln/test/sqlite3_test_fs.hpp>
 
-#include <mbgl/gfx/headless_frontend.hpp>
-#include <mbgl/storage/offline.hpp>
-#include <mbgl/storage/offline_database.hpp>
-#include <mbgl/storage/offline_download.hpp>
-#include <mbgl/storage/http_file_source.hpp>
-#include <mbgl/util/run_loop.hpp>
-#include <mbgl/util/io.hpp>
-#include <mbgl/util/compression.hpp>
-#include <mbgl/util/string.hpp>
+#include <mln/gfx/headless_frontend.hpp>
+#include <mln/storage/offline.hpp>
+#include <mln/storage/offline_database.hpp>
+#include <mln/storage/offline_download.hpp>
+#include <mln/storage/http_file_source.hpp>
+#include <mln/text/glyph_range.hpp>
+#include <mln/util/run_loop.hpp>
+#include <mln/util/io.hpp>
+#include <mln/util/compression.hpp>
+#include <mln/util/string.hpp>
 
-#include <mbgl/storage/sqlite3.hpp>
+#include <mln/storage/sqlite3.hpp>
 #include <gtest/gtest.h>
 
-using namespace mbgl;
+using namespace mln;
 using namespace std::literals::string_literals;
 using mapbox::sqlite::ResultCode;
 
@@ -346,10 +347,10 @@ TEST(OfflineDownload, ExcludeIdeographs) {
     observer->statusChangedFn = [&](OfflineRegionStatus status) {
         if (status.complete()) {
             EXPECT_EQ(status.completedTileCount, status.requiredTileCount);
-            EXPECT_EQ(138u,
-                      status.completedResourceCount); // 130 glyphs, 2 sprite images,
-                                                      // 2 sprite jsons, 1 tile, 1
-                                                      // style, source, image
+            EXPECT_EQ(NON_IDEOGRAPH_GLYPH_RANGES_PER_FONT_STACK + 8u,
+                      status.completedResourceCount); // glyph ranges, 2 sprite images,
+                                                      // 2 sprite jsons, 1 tile, 1 style,
+                                                      // source, image
             EXPECT_EQ(test.size, status.completedResourceSize);
 
             download.setState(OfflineRegionDownloadState::Inactive);

@@ -15,10 +15,12 @@ foreach($letter in [byte][char]'Z'..[byte][char]'A')
     if(-not (Test-Path $vcpkg_temp_dir))
     {
         & subst $vcpkg_temp_dir ([System.IO.Path]::Combine($PWD.Path, 'vendor', 'vcpkg'))
-        $env:VCPKG_ROOT = ('{0}\' -f $vcpkg_temp_dir)
         break
     }
 }
+
+# vcpkg finds its root from vcpkg.exe. A VCPKG_ROOT reaches Visual Studio 2026's vcvarsall through vcpkg, and its vcpkg-init installs the latest vcpkg scripts there.
+Remove-Item Env:VCPKG_ROOT -ErrorAction SilentlyContinue
 
 switch($Renderer)
 {
@@ -39,7 +41,7 @@ if(-not (Test-Path ('{0}\vcpkg.exe' -f $vcpkg_temp_dir)))
         ('--overlay-triplets={0}' -f [System.IO.Path]::Combine($PWD.Path, 'vendor', 'vcpkg-custom-triplets')),
         ('--triplet={0}' -f $Triplet),
         '--clean-after-build',
-        'install', 'curl', 'dlfcn-win32', 'glfw3', 'libuv', 'libjpeg-turbo', 'libpng', 'libwebp'
+        'install', 'curl', 'glfw3', 'libuv', 'libjpeg-turbo', 'libpng', 'libwebp'
     ) + $renderer_packages + $(if(${With-ICU}) {@('icu')} else {@()})
 )
 

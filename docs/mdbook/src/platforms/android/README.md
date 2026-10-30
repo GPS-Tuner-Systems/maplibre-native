@@ -19,6 +19,16 @@ cd platform/android
 
 Open the `platform/android` directory to get started.
 
+### Nix
+
+With [Nix](https://nixos.org) and flakes enabled, you can build from the command line instead. Running `nix develop .#android` in the root of the repository opens a shell with a JDK and an Android SDK that has the NDK version the build expects:
+
+```bash
+nix develop .#android
+cd platform/android
+./gradlew :MapLibreAndroidTestApp:assembleVulkanDebug
+```
+
 ## Setting an API Key
 
 _The test application (used for development purposes) uses MapTiler vector tiles, which require a MapTiler account and API key._
@@ -39,7 +49,7 @@ All new code should be written in [Kotlin](https://kotlinlang.org/).
 
 ## Style Checking
 
-To check Kotlin style, we use [ktlint](https://pinterest.github.io/ktlint/). This linter is based on the [official Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html). We intergrate with it using the [kotlinder](https://github.com/jeremymailen/kotlinter-gradle) Gradle plugin.
+To check Kotlin style, we use [ktlint](https://pinterest.github.io/ktlint/). This linter is based on the [official Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html). We integrate with it using the [kotlinder](https://github.com/jeremymailen/kotlinter-gradle) Gradle plugin.
 
 To check the style of all Kotlin source files, use:
 

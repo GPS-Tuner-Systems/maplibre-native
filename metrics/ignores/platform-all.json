@@ -1,7 +1,5 @@
 {
     "expression-tests/collator/accent-equals-de": "Locale-specific behavior changes based on platform.",
-    "expression-tests/interpolate-hcl/linear": "https://github.com/mapbox/mapbox-gl-native/issues/8720",
-    "expression-tests/interpolate-lab/linear": "https://github.com/mapbox/mapbox-gl-native/issues/8720",
     "expression-tests/is-supported-script/default": "This tests RTL text plugin behavior specific to GL JS",
     "expression-tests/legacy/categorical/array": "https://github.com/mapbox/mapbox-gl-native/issues/12747",
     "expression-tests/legacy/categorical/boolean": "https://github.com/mapbox/mapbox-gl-native/issues/12747",
@@ -75,13 +73,6 @@
     "render-tests/extent/1024-circle": "needs investigation",
     "render-tests/feature-state/promote-id": "https://github.com/mapbox/mapbox-gl-native/issues/16016",
     "render-tests/fill-extrusion-geometry/linestring": "https://github.com/mapbox/mapbox-gl-native/pull/14240",
-    "render-tests/fill-extrusion-pattern/@2x": "https://github.com/mapbox/mapbox-gl-js/issues/3327",
-    "render-tests/fill-extrusion-pattern/feature-expression": "https://github.com/mapbox/mapbox-gl-js/issues/3327",
-    "render-tests/fill-extrusion-pattern/function": "https://github.com/mapbox/mapbox-gl-js/issues/3327",
-    "render-tests/fill-extrusion-pattern/function-2": "https://github.com/mapbox/mapbox-gl-js/issues/3327",
-    "render-tests/fill-extrusion-pattern/literal": "https://github.com/mapbox/mapbox-gl-js/issues/3327",
-    "render-tests/fill-extrusion-pattern/opacity": "https://github.com/mapbox/mapbox-gl-js/issues/3327",
-    "render-tests/fill-extrusion-pattern/tile-buffer": "https://github.com/mapbox/mapbox-gl-js/issues/3327",
     "render-tests/fill-pattern/update-feature-state": "https://github.com/mapbox/mapbox-gl-native/issues/15895",
     "render-tests/geojson/inline-linestring-fill": "current behavior is arbitrary",
     "render-tests/icon-text-fit/text-variable-anchor-overlap": "https://github.com/mapbox/mapbox-gl-native/issues/15809",
@@ -131,7 +122,5 @@
     "render-tests/feature-state/promote-id-fill-extrusion": "https://github.com/mapbox/mapbox-gl-js/pull/9202",
     "render-tests/line-pattern/with-dasharray":"https://github.com/mapbox/mapbox-gl-js/pull/9189",
     "render-tests/symbol-sort-key/placement-tile-boundary-right-then-left": "https://github.com/mapbox/mapbox-gl-js/pull/9054",
-    "render-tests/tile-mode/streets-v11": "ignored due to flaky metrics results",
-    "render-tests/combinations/heatmap-translucent--fill-opaque": "Temporarily disabled until the renderer switch",
-    "render-tests/combinations/heatmap-translucent--background-opaque": "Temporarily disabled until the renderer switch"
+    "render-tests/tile-mode/streets-v11": "ignored due to flaky metrics results"
 }

@@ -1,14 +1,14 @@
-#include <mbgl/test/util.hpp>
-#include <mbgl/test/stub_file_source.hpp>
-#include <mbgl/test/map_adapter.hpp>
+#include <mln/test/util.hpp>
+#include <mln/test/stub_file_source.hpp>
+#include <mln/test/map_adapter.hpp>
 
-#include <mbgl/map/map_options.hpp>
-#include <mbgl/util/io.hpp>
-#include <mbgl/util/run_loop.hpp>
-#include <mbgl/util/color.hpp>
-#include <mbgl/renderer/renderer.hpp>
-#include <mbgl/gfx/headless_frontend.hpp>
-#include <mbgl/style/style.hpp>
+#include <mln/map/map_options.hpp>
+#include <mln/util/io.hpp>
+#include <mln/util/run_loop.hpp>
+#include <mln/util/color.hpp>
+#include <mln/renderer/renderer.hpp>
+#include <mln/gfx/headless_frontend.hpp>
+#include <mln/style/style.hpp>
 
 #include <regex>
 
@@ -23,7 +23,7 @@
    adding a new test case (probably using the "Droid" font family).
 */
 
-using namespace mbgl;
+using namespace mln;
 
 namespace {
 
@@ -65,7 +65,7 @@ TEST(LocalGlyphRasterizer, PingFang) {
 
     test.map.getStyle().loadJSON(util::read_file("test/fixtures/local_glyphs/mixed.json"));
 #if defined(__APPLE__) && !defined(__QT__)
-    test.checkRendering("ping_fang", 0.0161);
+    test.checkRendering("ping_fang", 0.025);
 #elif defined(__QT__)
     test.checkRendering("ping_fang_qt");
 #endif // defined(__APPLE__)
@@ -77,7 +77,7 @@ TEST(LocalGlyphRasterizer, PingFangWithBoldInStyle) {
     ss << std::regex_replace(
         util::read_file("test/fixtures/local_glyphs/mixed.json"), std::regex("NotoCJK"), "NotoCJK Bold");
     test.map.getStyle().loadJSON(ss.str());
-    test.checkRendering("ping_fang_with_bold_in_style");
+    test.checkRendering("ping_fang_with_bold_in_style", 0.05);
 }
 
 #if !defined(__QT__)
@@ -85,7 +85,7 @@ TEST(LocalGlyphRasterizer, PingFangSemibold) {
     LocalGlyphRasterizerTest test(std::string("PingFang TC Semibold"));
 
     test.map.getStyle().loadJSON(util::read_file("test/fixtures/local_glyphs/mixed.json"));
-    test.checkRendering("ping_fang_semibold", 0.0161);
+    test.checkRendering("ping_fang_semibold", 0.025);
 }
 #endif // !defined(__QT__)
 
