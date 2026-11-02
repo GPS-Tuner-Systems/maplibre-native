@@ -210,6 +210,7 @@ std::set<UnwrappedTileID> RenderTerrain::computeMeshCover(
     if (updateParameters) {
         const size_t maxTiles = terrainLoadBudget(updateParameters->terrainLoadMode).maxMeshTiles;
         const auto origin = meshTileCapOrigin(state);
+        out = coarsenDeepestMeshTiles(std::move(out), maxTiles, demSource->getMaxZoom());
         out = coarsenFarMeshTiles(std::move(out), maxTiles, demSource->getMaxZoom(), origin);
         out = coarsenFarMeshTiles(std::move(out), maxTiles, demSource->getMinZoom(), origin, /*onlyMerges=*/true);
         out = nearestMeshTiles(std::move(out), maxTiles, origin);
@@ -252,6 +253,42 @@ std::set<UnwrappedTileID> RenderTerrain::nearestMeshTiles(std::set<UnwrappedTile
                           return da < db || (da == db && a < b);
                       });
     return {sorted.begin(), sorted.begin() + static_cast<std::ptrdiff_t>(maxTiles)};
+}
+
+std::set<UnwrappedTileID> RenderTerrain::coarsenDeepestMeshTiles(std::set<UnwrappedTileID> tiles,
+                                                                 size_t maxTiles,
+                                                                 uint8_t minZoom) {
+    if (maxTiles == 0) {
+        return tiles;
+    }
+    while (tiles.size() > maxTiles) {
+        uint8_t deepest = 0;
+        for (const auto& id : tiles) {
+            deepest = std::max(deepest, id.canonical.z);
+        }
+        if (deepest <= minZoom) {
+            break;
+        }
+        std::set<UnwrappedTileID> merged;
+        for (const auto& id : tiles) {
+            if (id.canonical.z == deepest) {
+                merged.emplace(id.wrap, id.canonical.scaledTo(static_cast<uint8_t>(deepest - 1)));
+            } else {
+                merged.insert(id);
+            }
+        }
+        // Keep no tile inside another one (the cover has none; this only guards the merge)
+        std::set<UnwrappedTileID> result;
+        for (const auto& id : merged) {
+            if (std::none_of(merged.begin(), merged.end(), [&](const UnwrappedTileID& other) {
+                    return other != id && id.isChildOf(other);
+                })) {
+                result.insert(id);
+            }
+        }
+        tiles = std::move(result);
+    }
+    return tiles;
 }
 
 std::set<UnwrappedTileID> RenderTerrain::coarsenFarMeshTiles(std::set<UnwrappedTileID> tiles,

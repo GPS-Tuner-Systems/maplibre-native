@@ -119,6 +119,14 @@ public:
     /// tile covers little of the screen, and the tiles still cover all the ground they did.
     /// Whatever is still over `maxTiles` once no tile is deeper than `minZoom`, nearestMeshTiles
     /// drops.
+    /// While over `maxTiles`, merges all tiles of the deepest zoom into their parents, level by
+    /// level, never shallower than `minZoom`: detail drops evenly over the whole cover. Coarsening
+    /// only the farthest tiles left a band of much coarser tiles in the middle of a pitched
+    /// close-up whose near tiles went down to z20 (roads broken into blocks).
+    static std::set<UnwrappedTileID> coarsenDeepestMeshTiles(std::set<UnwrappedTileID> tiles,
+                                                             size_t maxTiles,
+                                                             uint8_t minZoom);
+
     /// With `onlyMerges`, a parent is only a candidate when at least two of its children are in
     /// the set, so every step lowers the tile count instead of growing a lone far tile.
     static std::set<UnwrappedTileID> coarsenFarMeshTiles(std::set<UnwrappedTileID> tiles,
