@@ -172,8 +172,18 @@ std::set<UnwrappedTileID> RenderTerrain::computeMeshCover(
                     nx -= numTiles;
                     ++nwrap;
                 }
-                dilated.emplace(static_cast<int16_t>(nwrap),
-                                CanonicalTileID(id.canonical.z, static_cast<uint32_t>(nx), static_cast<uint32_t>(ny)));
+                const UnwrappedTileID neighbour(static_cast<int16_t>(nwrap),
+                                                CanonicalTileID(id.canonical.z, static_cast<uint32_t>(nx), static_cast<uint32_t>(ny)));
+                // In a cover of mixed zooms a neighbour can lie inside, or contain, a tile the set
+                // already has. Two mesh tiles over the same ground z-fight, mixing their drape
+                // textures pixel by pixel wherever these differ (most visibly on often updated
+                // layers), so such a neighbour is left out: the ground is covered already.
+                const bool overlaps = std::any_of(dilated.begin(), dilated.end(), [&](const UnwrappedTileID& tile) {
+                    return tile == neighbour || tile.isChildOf(neighbour) || neighbour.isChildOf(tile);
+                });
+                if (!overlaps) {
+                    dilated.insert(neighbour);
+                }
             }
         }
     }
