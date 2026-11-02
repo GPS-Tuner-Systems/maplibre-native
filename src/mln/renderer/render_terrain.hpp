@@ -282,6 +282,9 @@ public:
      * @brief Get the terrain implementation
      */
     const Immutable<style::Terrain::Impl>& getImpl() const { return impl; }
+    // Takes a changed terrain of the same DEM source (e.g. another exaggeration), keeping the
+    // mesh, DEM and drape state; the exaggeration is read every frame.
+    void setImpl(Immutable<style::Terrain::Impl> impl_) { impl = std::move(impl_); }
 
     /**
      * @brief Get the terrain mesh for a specific tile

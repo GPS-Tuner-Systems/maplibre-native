@@ -271,7 +271,13 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
 
     if (updateParameters->terrain) {
         if (renderTerrain && renderTerrain->getImpl() != *updateParameters->terrain) {
-            dropRenderTerrain();
+            // An exaggeration change (e.g. animated) keeps the terrain; only a new DEM source
+            // rebuilds it.
+            if (renderTerrain->getImpl()->sourceID == (*updateParameters->terrain)->sourceID) {
+                renderTerrain->setImpl(*updateParameters->terrain);
+            } else {
+                dropRenderTerrain();
+            }
         }
         if (!renderTerrain) {
             renderTerrain = std::make_unique<RenderTerrain>(*updateParameters->terrain);
