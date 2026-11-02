@@ -269,6 +269,8 @@ if(MLN_WITH_PLUGINS)
     # An exported name alone does not pull an unreferenced function out of mbgl-core.
     target_link_options(maplibre PRIVATE "-Wl,--undefined=mln_plugin_register_v1")
 endif()
+# GPS Tuner: the host app registers its elevation tile provider through this C entry point.
+target_link_options(maplibre PRIVATE "-Wl,--undefined=mln_gpst_set_dem_provider")
 set(_version_script "${CMAKE_CURRENT_BINARY_DIR}/maplibre-version-script")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../../../version-script.in" "${_version_script}" @ONLY)
 set_property(TARGET maplibre APPEND PROPERTY LINK_DEPENDS "${_version_script}")

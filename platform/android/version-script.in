@@ -1,6 +1,7 @@
 {
   global:
     JNI_OnLoad;
+    mln_gpst_set_dem_provider;
 @MLN_PLUGIN_EXPORTS@
   local: *;
 };

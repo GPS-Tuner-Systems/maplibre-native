@@ -6,14 +6,165 @@
 #include <mln/storage/main_resource_loader.hpp>
 #include <mln/storage/resource.hpp>
 #include <mln/storage/resource_options.hpp>
+#include <mln/storage/response.hpp>
+#include <mln/util/async_request.hpp>
 #include <mln/util/client_options.hpp>
+#include <mln/util/image.hpp>
+#include <mln/util/platform.hpp>
 #include <mln/util/stopwatch.hpp>
 #include <mln/util/thread.hpp>
 
+#include <algorithm>
+#include <atomic>
 #include <cassert>
+#include <cmath>
+#include <condition_variable>
+#include <deque>
+#include <functional>
 #include <map>
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <vector>
+
+// GPS Tuner: elevation tiles generated in-process by the host app ("gtdem://{z}/{x}/{y}").
+// The provider fills size * size elevations in meters (row-major, north to south) for the
+// given XYZ tile and returns non-zero on success; returning zero means no data for the tile.
+using GpstDemProviderFn = int (*)(void* context, int z, int x, int y, int size, float* elevations);
+
+namespace {
+
+std::atomic<GpstDemProviderFn> gpstDemProvider{nullptr};
+std::atomic<void*> gpstDemProviderContext{nullptr};
+
+} // namespace
+
+extern "C" __attribute__((visibility("default"))) void mln_gpst_set_dem_provider(GpstDemProviderFn provider,
+                                                                                  void* context) {
+    gpstDemProviderContext.store(context);
+    gpstDemProvider.store(provider);
+}
 
 namespace mln {
+
+namespace {
+
+constexpr const char* gpstDemScheme = "gtdem://";
+constexpr int gpstDemTileSize = 256;
+
+bool isGpstDemRequest(const Resource& resource) {
+    return resource.url.rfind(gpstDemScheme, 0) == 0;
+}
+
+// Encodes the elevations as a Terrarium PNG: height = (R * 256 + G + B / 256) - 32768.
+Response loadGpstDemTile(const Resource& resource) {
+    Response response;
+    const auto provider = gpstDemProvider.load();
+    if (!provider || !resource.tileData) {
+        response.noContent = true;
+        return response;
+    }
+
+    const auto& tile = *resource.tileData;
+    std::vector<float> elevations(gpstDemTileSize * gpstDemTileSize);
+    if (!provider(gpstDemProviderContext.load(), tile.z, tile.x, tile.y, gpstDemTileSize, elevations.data())) {
+        response.noContent = true;
+        return response;
+    }
+
+    PremultipliedImage image({gpstDemTileSize, gpstDemTileSize});
+    for (std::size_t i = 0; i < elevations.size(); ++i) {
+        const double value = std::clamp(static_cast<double>(elevations[i]) + 32768.0, 0.0, 65535.99);
+        const double whole = std::floor(value);
+        const auto integer = static_cast<uint32_t>(whole);
+        image.data[i * 4 + 0] = static_cast<uint8_t>(integer >> 8);
+        image.data[i * 4 + 1] = static_cast<uint8_t>(integer & 0xff);
+        image.data[i * 4 + 2] = static_cast<uint8_t>((value - whole) * 256.0);
+        image.data[i * 4 + 3] = 255;
+    }
+
+    response.data = std::make_shared<std::string>(encodePNG(image));
+    response.expires = Timestamp::max();
+    return response;
+}
+
+// Generates the elevation tiles on their own thread, so they never hold up the other requests
+// of the resource loader thread (vector tiles). Newest requests first: those are the tiles the
+// current view needs. Requests cancelled before they are reached (tiles that left the view)
+// are dropped without generating them.
+class GpstDemWorker {
+public:
+    using Callback = std::function<void(const Response&)>;
+
+    static GpstDemWorker& get() {
+        static GpstDemWorker worker;
+        return worker;
+    }
+
+    std::shared_ptr<std::atomic<bool>> post(const Resource& resource, Callback callback) {
+        auto cancelled = std::make_shared<std::atomic<bool>>(false);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            jobs.push_back(std::make_unique<Job>(Job{resource, std::move(callback), cancelled}));
+        }
+        condition.notify_one();
+        return cancelled;
+    }
+
+    ~GpstDemWorker() {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            stopping = true;
+        }
+        condition.notify_one();
+        thread.join();
+    }
+
+private:
+    struct Job {
+        Resource resource;
+        Callback callback;
+        std::shared_ptr<std::atomic<bool>> cancelled;
+    };
+
+    GpstDemWorker()
+        : thread([this] { run(); }) {}
+
+    void run() {
+        platform::setCurrentThreadName("GpstDemWorker");
+        while (true) {
+            std::unique_ptr<Job> job;
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                condition.wait(lock, [this] { return stopping || !jobs.empty(); });
+                if (stopping) return;
+                job = std::move(jobs.back());
+                jobs.pop_back();
+            }
+            if (job->cancelled->load()) continue;
+            Response response = loadGpstDemTile(job->resource);
+            if (!job->cancelled->load()) job->callback(response);
+        }
+    }
+
+    std::mutex mutex;
+    std::condition_variable condition;
+    std::deque<std::unique_ptr<Job>> jobs;
+    bool stopping = false;
+    std::thread thread;
+};
+
+class GpstDemRequest : public AsyncRequest {
+public:
+    explicit GpstDemRequest(std::shared_ptr<std::atomic<bool>> cancelled_)
+        : cancelled(std::move(cancelled_)) {}
+    ~GpstDemRequest() override { cancelled->store(true); }
+
+private:
+    std::shared_ptr<std::atomic<bool>> cancelled;
+};
+
+} // namespace
 
 class MainResourceLoaderThread {
 public:
@@ -34,6 +185,11 @@ public:
         auto callback = [ref](const Response& res) {
             ref.invoke(&FileSourceRequest::setResponse, res);
         };
+
+        if (isGpstDemRequest(resource)) {
+            tasks[req] = std::make_unique<GpstDemRequest>(GpstDemWorker::get().post(resource, callback));
+            return;
+        }
 
         auto requestFromNetwork = [=, this](const Resource& res,
                                             std::unique_ptr<AsyncRequest> parent) -> std::unique_ptr<AsyncRequest> {
@@ -180,7 +336,7 @@ public:
     }
 
     bool canRequest(const Resource& resource) const {
-        return (assetFileSource && assetFileSource->canRequest(resource)) ||
+        return isGpstDemRequest(resource) || (assetFileSource && assetFileSource->canRequest(resource)) ||
                (localFileSource && localFileSource->canRequest(resource)) ||
                (databaseFileSource && databaseFileSource->canRequest(resource)) ||
                (onlineFileSource && onlineFileSource->canRequest(resource)) ||
