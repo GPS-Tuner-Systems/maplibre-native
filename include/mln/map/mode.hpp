@@ -94,10 +94,14 @@ struct TerrainLoadBudget {
 
 constexpr TerrainLoadBudget terrainLoadBudget(TerrainLoadMode mode) {
     switch (mode) {
+        // The mesh follows the view in every mode (meshTargetZoom 22): stopping it a few levels
+        // past the DEM stretched each 1024 px drape target 16x and more in a close-up, blurring
+        // lines and labels beyond use. The tile cap still bounds the tile count; the farthest
+        // tiles are coarsened first.
         case TerrainLoadMode::Balanced:
-            return {32, 16, 48, 15};
+            return {32, 16, 48, 22};
         case TerrainLoadMode::Performance:
-            return {8, 4, 24, 14};
+            return {8, 4, 24, 22};
         case TerrainLoadMode::Quality:
         default:
             return {0, 0, 64, 22}; // no per-frame budget, generous tile cap, mesh follows the view

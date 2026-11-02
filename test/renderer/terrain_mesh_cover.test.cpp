@@ -114,37 +114,15 @@ constexpr TerrainLoadMode allModes[] = {
     TerrainLoadMode::Quality, TerrainLoadMode::Balanced, TerrainLoadMode::Performance};
 } // namespace
 
-TEST(TerrainMeshCover, MeshGoesPastACoarseDEMAsFarAsTheModeAffords) {
-    // A z12 DEM: Performance meshes to z14 and Balanced to z15.
-    EXPECT_EQ(14, meshMaxZoom(TerrainLoadMode::Performance, 12));
-    EXPECT_EQ(15, meshMaxZoom(TerrainLoadMode::Balanced, 12));
-}
-
-TEST(TerrainMeshCover, ADeepDEMGetsFewOrNoExtraLevels) {
-    // A z15 DEM (lidar) is already as deep as Performance and Balanced go.
-    EXPECT_EQ(15, meshMaxZoom(TerrainLoadMode::Performance, 15));
-    EXPECT_EQ(15, meshMaxZoom(TerrainLoadMode::Balanced, 15));
-}
-
-TEST(TerrainMeshCover, QualityFollowsTheViewAsGlJsDoes) {
+TEST(TerrainMeshCover, EveryModeFollowsTheViewAsGlJsDoes) {
     // maplibre-gl-js's TerrainSourceCache covers to z22 whatever the DEM's maxzoom, clamping only
-    // the DEM lookup; in Quality only the tile cap (and the coarsening before it) bounds the mesh.
-    for (const uint8_t demMaxZoom : {6, 12, 15, 18, 22}) {
-        EXPECT_EQ(util::DEFAULT_MAX_ZOOM, meshMaxZoom(TerrainLoadMode::Quality, demMaxZoom));
-    }
-}
-
-TEST(TerrainMeshCover, MeshIsNeverShallowerThanTheDEM) {
+    // the DEM lookup; only the tile cap (and the coarsening before it) bounds the mesh. A mesh
+    // stopping a few levels past the DEM stretched the drape targets and blurred close-ups.
     for (const auto mode : allModes) {
-        EXPECT_LE(18, meshMaxZoom(mode, 18));
+        for (const uint8_t demMaxZoom : {6, 12, 15, 18, 22}) {
+            EXPECT_EQ(util::DEFAULT_MAX_ZOOM, meshMaxZoom(mode, demMaxZoom));
+        }
     }
-    EXPECT_EQ(18, meshMaxZoom(TerrainLoadMode::Balanced, 18));
-    EXPECT_EQ(18, meshMaxZoom(TerrainLoadMode::Performance, 18));
-}
-
-TEST(TerrainMeshCover, BalancedAndPerformanceGoAtMostThreeLevelsPastTheDEM) {
-    EXPECT_EQ(9, meshMaxZoom(TerrainLoadMode::Balanced, 6));
-    EXPECT_EQ(9, meshMaxZoom(TerrainLoadMode::Performance, 6));
 }
 
 namespace {
