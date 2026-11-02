@@ -1,10 +1,13 @@
 #pragma once
 
 #include <mln/map/mode.hpp>
+#include <mln/tile/tile_id.hpp>
 #include <mln/actor/scheduler.hpp>
 #include <mln/util/feature.hpp>
 
 #include <memory>
+#include <set>
+#include <string>
 #include <numbers>
 
 #include <mapbox/std/weak.hpp>
@@ -48,6 +51,11 @@ public:
     /// Terrain elevation for the tile cover; null when there is no terrain, which
     /// leaves the cover flat. See util::TileElevationProvider.
     const util::TileElevationProvider* elevationProvider = nullptr;
+    // The terrain mesh tiles of the last frame and the ID of the terrain's DEM source: that
+    // source also loads the mesh tiles within its zoom range, so a mesh tile coarsened past the
+    // source's own cover still finds its exact DEM tile instead of rendering flat.
+    const std::set<UnwrappedTileID>* terrainMeshTiles = nullptr;
+    const std::string* terrainDEMSourceID = nullptr;
     bool isUpdateSynchronous = false;
     bool captureRenderedFeatures = false;
 };

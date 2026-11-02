@@ -591,6 +591,10 @@ uint8_t RenderTileSetSource::getMaxZoom() const {
     return cachedTileset ? cachedTileset->zoomRange.max : util::TERRAIN_RGB_MAXZOOM;
 }
 
+uint8_t RenderTileSetSource::getMinZoom() const {
+    return cachedTileset ? cachedTileset->zoomRange.min : 0;
+}
+
 void RenderTileSetSource::update(Immutable<style::Source::Impl> baseImpl_,
                                  const std::vector<Immutable<style::LayerProperties>>& layers,
                                  const bool needsRendering,

@@ -40,6 +40,7 @@
 #include <mln/util/projection.hpp>
 #include <mln/math/angles.hpp>
 #include <mln/util/logging.hpp>
+#include <map>
 #include <mln/util/image.hpp>
 #include <mln/util/mat4.hpp>
 #include <mln/util/monotonic_timer.hpp>
@@ -200,7 +201,7 @@ std::set<UnwrappedTileID> RenderTerrain::computeMeshCover(
         const size_t maxTiles = terrainLoadBudget(updateParameters->terrainLoadMode).maxMeshTiles;
         const auto origin = meshTileCapOrigin(state);
         out = coarsenFarMeshTiles(std::move(out), maxTiles, demSource->getMaxZoom(), origin);
-        out = coarsenFarMeshTiles(std::move(out), maxTiles, 0, origin);
+        out = coarsenFarMeshTiles(std::move(out), maxTiles, demSource->getMinZoom(), origin, /*onlyMerges=*/true);
         out = nearestMeshTiles(std::move(out), maxTiles, origin);
     }
     return out;
@@ -246,7 +247,8 @@ std::set<UnwrappedTileID> RenderTerrain::nearestMeshTiles(std::set<UnwrappedTile
 std::set<UnwrappedTileID> RenderTerrain::coarsenFarMeshTiles(std::set<UnwrappedTileID> tiles,
                                                              size_t maxTiles,
                                                              uint8_t minZoom,
-                                                             const std::array<double, 2>& origin) {
+                                                             const std::array<double, 2>& origin,
+                                                             bool onlyMerges) {
     if (maxTiles == 0) {
         return tiles;
     }
@@ -256,11 +258,14 @@ std::set<UnwrappedTileID> RenderTerrain::coarsenFarMeshTiles(std::set<UnwrappedT
         // and drops at most three tiles. Parents of tiles at minZoom are not candidates.
         std::set<UnwrappedTileID> parents;
         std::set<UnwrappedTileID> withDeeperTiles;
+        std::map<UnwrappedTileID, int> childCount;
         for (const auto& id : tiles) {
             if (id.canonical.z <= minZoom) {
                 continue;
             }
-            parents.emplace(id.wrap, id.canonical.scaledTo(id.canonical.z - 1));
+            const UnwrappedTileID parent(id.wrap, id.canonical.scaledTo(id.canonical.z - 1));
+            parents.insert(parent);
+            childCount[parent]++;
             for (int z = id.canonical.z - 2; z >= minZoom; --z) {
                 withDeeperTiles.emplace(id.wrap, id.canonical.scaledTo(static_cast<uint8_t>(z)));
             }
@@ -269,7 +274,7 @@ std::set<UnwrappedTileID> RenderTerrain::coarsenFarMeshTiles(std::set<UnwrappedT
         std::optional<UnwrappedTileID> farthest;
         double farthestDist2 = 0;
         for (const auto& parent : parents) {
-            if (withDeeperTiles.contains(parent)) {
+            if (withDeeperTiles.contains(parent) || (onlyMerges && childCount[parent] < 2)) {
                 continue;
             }
             const double dist2 = tileCentreDistance2(parent, origin);
@@ -406,6 +411,7 @@ void RenderTerrain::update(RenderOrchestrator& orchestrator,
     std::set<UnwrappedTileID> meshTiles = frameMeshCover ? std::move(*frameMeshCover)
                                                          : computeMeshCover(state, updateParameters);
     frameMeshCover.reset();
+    lastMeshTiles = meshTiles;
 
     // Drop drawables and cached DEM textures for tiles that left the mesh tile
     // set, keeping everything else intact between frames

@@ -116,6 +116,7 @@ public:
     virtual void dumpDebugLogs() const = 0;
 
     virtual uint8_t getMaxZoom() const;
+    virtual uint8_t getMinZoom() const { return 0; }
 
     /// The tile size the source selects tiles with, which decides the zoom its cover lands on.
     /// Not necessarily the size its tiles decode to.

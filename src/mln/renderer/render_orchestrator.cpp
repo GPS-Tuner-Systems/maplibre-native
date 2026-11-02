@@ -301,6 +301,8 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
         terrainEnabled ? getRenderSource(renderTerrain->getSourceID()) : nullptr,
         terrainEnabled ? renderTerrain->getExaggeration() : 1.0};
     tileParameters.elevationProvider = terrainEnabled ? &elevationProvider : nullptr;
+    tileParameters.terrainMeshTiles = terrainEnabled ? &renderTerrain->getLastMeshTiles() : nullptr;
+    tileParameters.terrainDEMSourceID = terrainEnabled ? &renderTerrain->getSourceID() : nullptr;
 
     const ImageDifference imageDiff = diffImages(imageImpls, updateParameters->images);
     imageImpls = updateParameters->images;

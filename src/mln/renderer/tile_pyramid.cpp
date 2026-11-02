@@ -144,6 +144,21 @@ void TilePyramid::update(const std::vector<Immutable<style::LayerProperties>>& l
         }
 
         idealTiles = util::tileCover(tileCoverParameters, idealZoom, zoomRange, tileZoom);
+
+        // The terrain's DEM source also loads the terrain mesh tiles within its zoom range (see
+        // TileParameters::terrainMeshTiles). Deeper mesh tiles sample their ancestor at maxzoom,
+        // which the cover above already has.
+        if (parameters.terrainMeshTiles && parameters.terrainDEMSourceID &&
+            *parameters.terrainDEMSourceID == sourceImpl.id) {
+            std::set<OverscaledTileID> ideal(idealTiles.begin(), idealTiles.end());
+            for (const auto& meshTile : *parameters.terrainMeshTiles) {
+                const uint8_t z = meshTile.canonical.z;
+                if (z < zoomRange.min || z > zoomRange.max) continue;
+                if (ideal.emplace(z, meshTile.wrap, meshTile.canonical).second) {
+                    idealTiles.emplace_back(z, meshTile.wrap, meshTile.canonical);
+                }
+            }
+        }
         if (parameters.mode == MapMode::Tile && type != SourceType::Raster && type != SourceType::RasterDEM &&
             idealTiles.size() > 1) {
             mln::Log::Warning(mln::Event::General,

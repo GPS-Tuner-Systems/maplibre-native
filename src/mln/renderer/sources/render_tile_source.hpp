@@ -92,6 +92,7 @@ protected:
 
 private:
     uint8_t getMaxZoom() const final;
+    uint8_t getMinZoom() const final;
     void update(Immutable<style::Source::Impl>,
                 const std::vector<Immutable<style::LayerProperties>>&,
                 bool needsRendering,

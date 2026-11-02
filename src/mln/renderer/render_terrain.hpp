@@ -119,10 +119,13 @@ public:
     /// tile covers little of the screen, and the tiles still cover all the ground they did.
     /// Whatever is still over `maxTiles` once no tile is deeper than `minZoom`, nearestMeshTiles
     /// drops.
+    /// With `onlyMerges`, a parent is only a candidate when at least two of its children are in
+    /// the set, so every step lowers the tile count instead of growing a lone far tile.
     static std::set<UnwrappedTileID> coarsenFarMeshTiles(std::set<UnwrappedTileID> tiles,
                                                          size_t maxTiles,
                                                          uint8_t minZoom,
-                                                         const std::array<double, 2>& origin);
+                                                         const std::array<double, 2>& origin,
+                                                         bool onlyMerges = false);
 
     /// Resolve the DEM render source from the orchestrator if not yet bound.
     /// Renderer::Impl::render calls this before building the frame's drape-target
@@ -143,6 +146,8 @@ public:
     /// call, so every getRenderTarget() lookup missed and no terrain drawable was
     /// ever created - the map rendered empty.
     void setFrameMeshCover(std::set<UnwrappedTileID> cover) { frameMeshCover = std::move(cover); }
+    // The mesh tiles of the last update(), for the DEM source to load (TileParameters::terrainMeshTiles).
+    const std::set<UnwrappedTileID>& getLastMeshTiles() const { return lastMeshTiles; }
 
     /**
      * @brief Update terrain rendering (create/update drawables)
@@ -425,6 +430,7 @@ private:
     /// Mesh cover for the current frame, set by Renderer::Impl before the drape
     /// target pool is built; consumed (and cleared) by update()
     std::optional<std::set<UnwrappedTileID>> frameMeshCover;
+    std::set<UnwrappedTileID> lastMeshTiles;
 
     // DEM decode vector for the source's encoding (default: Mapbox Terrain-RGB)
     std::array<float, 4> demUnpackVector = {{6553.6f, 25.6f, 0.1f, 10000.0f}};
