@@ -242,6 +242,12 @@ interface NativeMap {
 
   LatLng latLngForPixel(@NonNull PointF pixel);
 
+  @NonNull
+  PointF pixelForLatLng(@NonNull LatLng latLng, double elevationMeters);
+
+  @NonNull
+  LatLng latLngForPixel(@NonNull PointF pixel, double elevationMeters);
+
   void latLngsForPixels(@NonNull double[] input, @NonNull double[] output);
 
   //
@@ -290,6 +296,10 @@ interface NativeMap {
   void setDebugAboveGroundLog(boolean enabled);
 
   int getTerrainLoadMode();
+
+  void setTileLodMode(int mode);
+
+  int getTileLodMode();
 
   void anchorCenterOnTerrain();
 

@@ -221,6 +221,10 @@ public:
 
     jni::Local<jni::Object<LatLng>> latLngForPixel(JNIEnv&, jfloat, jfloat);
 
+    jni::Local<jni::Object<PointF>> pixelForLatLngAtElevation(JNIEnv&, jdouble, jdouble, jdouble);
+
+    jni::Local<jni::Object<LatLng>> latLngForPixelAtElevation(JNIEnv&, jfloat, jfloat, jdouble);
+
     void latLngsForPixels(JNIEnv&, const jni::Array<jdouble>&, jni::Array<jdouble>&, jfloat);
 
     jni::Local<jni::Array<jlong>> addPolylines(JNIEnv&, const jni::Array<jni::Object<Polyline>>&);
@@ -343,6 +347,10 @@ public:
     void setTerrainLoadMode(JNIEnv&, jni::jint);
 
     jni::jint getTerrainLoadMode(JNIEnv&);
+
+    void setTileLodMode(JNIEnv&, jni::jint);
+
+    jni::jint getTileLodMode(JNIEnv&);
 
     void anchorCenterOnTerrain(JNIEnv&);
 

@@ -119,6 +119,10 @@ public:
     // Projection
     ScreenCoordinate pixelForLatLng(const LatLng&) const;
     LatLng latLngForPixel(const ScreenCoordinate&, LatLng::WrapMode = LatLng::Wrapped) const;
+    /// Like pixelForLatLng / latLngForPixel, but for the point `elevationMeters` above sea
+    /// level (metres, terrain exaggeration applied), e.g. a point on the rendered terrain.
+    ScreenCoordinate pixelForLatLng(const LatLng&, double elevationMeters) const;
+    LatLng latLngForPixel(const ScreenCoordinate&, double elevationMeters, LatLng::WrapMode = LatLng::Wrapped) const;
     std::vector<ScreenCoordinate> pixelsForLatLngs(const std::vector<LatLng>&) const;
     std::vector<LatLng> latLngsForPixels(const std::vector<ScreenCoordinate>&,
                                          LatLng::WrapMode = LatLng::Wrapped) const;

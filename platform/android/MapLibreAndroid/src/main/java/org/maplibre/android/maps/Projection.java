@@ -99,6 +99,20 @@ public class Projection {
     return nativeMapView.latLngForPixel(point);
   }
 
+  /**
+   * Like {@link #fromScreenLocation(PointF)}, but intersects the ray through the screen point
+   * with the plane {@code elevationMeters} above sea level instead of sea level. With 3D terrain
+   * this is the plane of the terrain height (terrain exaggeration applied) around the point.
+   *
+   * @param point           A Point on the screen in screen pixels.
+   * @param elevationMeters Height of the plane above sea level in metres.
+   * @return The LatLng corresponding to the point on the screen.
+   */
+  @NonNull
+  public LatLng fromScreenLocation(@NonNull PointF point, double elevationMeters) {
+    return nativeMapView.latLngForPixel(point, elevationMeters);
+  }
+
 
   /**
    * Returns the geographic locations that corresponds to screen locations.
@@ -291,6 +305,19 @@ public class Projection {
   @NonNull
   public PointF toScreenLocation(@NonNull LatLng location) {
     return nativeMapView.pixelForLatLng(location);
+  }
+
+  /**
+   * Like {@link #toScreenLocation(LatLng)}, but for the point {@code elevationMeters} above sea
+   * level, e.g. a point on the 3D terrain (terrain exaggeration applied).
+   *
+   * @param location        A LatLng on the map to convert to a screen location.
+   * @param elevationMeters Height of the point above sea level in metres.
+   * @return A Point representing the screen location in screen pixels.
+   */
+  @NonNull
+  public PointF toScreenLocation(@NonNull LatLng location, double elevationMeters) {
+    return nativeMapView.pixelForLatLng(location, elevationMeters);
   }
 
   /**

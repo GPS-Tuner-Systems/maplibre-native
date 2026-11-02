@@ -750,6 +750,21 @@ jni::Local<jni::Object<LatLng>> NativeMapView::latLngForPixel(JNIEnv& env, jfloa
     return LatLng::New(env, map->latLngForPixel(mln::ScreenCoordinate(x, y)));
 }
 
+jni::Local<jni::Object<PointF>> NativeMapView::pixelForLatLngAtElevation(JNIEnv& env,
+                                                                        jdouble latitude,
+                                                                        jdouble longitude,
+                                                                        jdouble elevationMeters) {
+    mln::ScreenCoordinate pixel = map->pixelForLatLng(mln::LatLng(latitude, longitude), elevationMeters);
+    return PointF::New(env, static_cast<float>(pixel.x), static_cast<float>(pixel.y));
+}
+
+jni::Local<jni::Object<LatLng>> NativeMapView::latLngForPixelAtElevation(JNIEnv& env,
+                                                                        jfloat x,
+                                                                        jfloat y,
+                                                                        jdouble elevationMeters) {
+    return LatLng::New(env, map->latLngForPixel(mln::ScreenCoordinate(x, y), elevationMeters));
+}
+
 void NativeMapView::latLngsForPixels(JNIEnv& env,
                                      const jni::Array<jdouble>& input,
                                      jni::Array<jdouble>& output,
@@ -1341,6 +1356,14 @@ jni::jint NativeMapView::getTerrainLoadMode(JNIEnv&) {
     return jni::jint(static_cast<int>(map->getTerrainLoadMode()));
 }
 
+void NativeMapView::setTileLodMode(JNIEnv&, jni::jint mode) {
+    map->setTileLodMode(static_cast<mln::TileLodMode>(mode));
+}
+
+jni::jint NativeMapView::getTileLodMode(JNIEnv&) {
+    return jni::jint(static_cast<int>(map->getTileLodMode()));
+}
+
 void NativeMapView::anchorCenterOnTerrain(JNIEnv&) {
     map->anchorCenterOnTerrain();
 }
@@ -1496,6 +1519,8 @@ void NativeMapView::registerNative(jni::JNIEnv& env) {
         METHOD(&NativeMapView::getMetersPerPixelAtLatitude, "nativeGetMetersPerPixelAtLatitude"),
         METHOD(&NativeMapView::projectedMetersForLatLng, "nativeProjectedMetersForLatLng"),
         METHOD(&NativeMapView::pixelForLatLng, "nativePixelForLatLng"),
+        METHOD(&NativeMapView::pixelForLatLngAtElevation, "nativePixelForLatLngAtElevation"),
+        METHOD(&NativeMapView::latLngForPixelAtElevation, "nativeLatLngForPixelAtElevation"),
         METHOD(&NativeMapView::pixelsForLatLngs, "nativePixelsForLatLngs"),
         METHOD(&NativeMapView::getVisibleCoordinateBounds, "nativeGetVisibleCoordinateBounds"),
         METHOD(&NativeMapView::latLngForProjectedMeters, "nativeLatLngForProjectedMeters"),
@@ -1553,6 +1578,8 @@ void NativeMapView::registerNative(jni::JNIEnv& env) {
         METHOD(&NativeMapView::getTileLodScale, "nativeGetTileLodScale"),
         METHOD(&NativeMapView::setTerrainLoadMode, "nativeSetTerrainLoadMode"),
         METHOD(&NativeMapView::getTerrainLoadMode, "nativeGetTerrainLoadMode"),
+        METHOD(&NativeMapView::setTileLodMode, "nativeSetTileLodMode"),
+        METHOD(&NativeMapView::getTileLodMode, "nativeGetTileLodMode"),
         METHOD(&NativeMapView::anchorCenterOnTerrain, "nativeAnchorCenterOnTerrain"),
         METHOD(&NativeMapView::setCenterAltitudeKeepingView, "nativeSetCenterAltitudeKeepingView"),
         METHOD(&NativeMapView::getCenterAltitude, "nativeGetCenterAltitude"),

@@ -754,6 +754,26 @@ final class NativeMapView implements NativeMap {
   }
 
   @Override
+  @NonNull
+  public PointF pixelForLatLng(@NonNull LatLng latLng, double elevationMeters) {
+    if (checkState("pixelForLatLng")) {
+      return new PointF();
+    }
+    PointF pointF = nativePixelForLatLngAtElevation(latLng.getLatitude(), latLng.getLongitude(), elevationMeters);
+    pointF.set(pointF.x * pixelRatio, pointF.y * pixelRatio);
+    return pointF;
+  }
+
+  @Override
+  @NonNull
+  public LatLng latLngForPixel(@NonNull PointF pixel, double elevationMeters) {
+    if (checkState("latLngForPixel")) {
+      return new LatLng();
+    }
+    return nativeLatLngForPixelAtElevation(pixel.x / pixelRatio, pixel.y / pixelRatio, elevationMeters);
+  }
+
+  @Override
   public void latLngsForPixels(@NonNull double[] input, @NonNull double[] output) {
     if (!checkState("latLngsForPixels")) {
       nativeLatLngsForPixels(input, output, pixelRatio);
@@ -905,6 +925,22 @@ final class NativeMapView implements NativeMap {
       return;
     }
     nativeSetDebugAboveGroundLog(enabled);
+  }
+
+  @Override
+  public void setTileLodMode(int mode) {
+    if (checkState("setTileLodMode")) {
+      return;
+    }
+    nativeSetTileLodMode(mode);
+  }
+
+  @Override
+  public int getTileLodMode() {
+    if (checkState("getTileLodMode")) {
+      return 0;
+    }
+    return nativeGetTileLodMode();
   }
 
   @Override
@@ -1775,6 +1811,12 @@ final class NativeMapView implements NativeMap {
   private native LatLng nativeLatLngForPixel(float x, float y);
 
   @Keep
+  private native PointF nativePixelForLatLngAtElevation(double lat, double lon, double elevationMeters);
+
+  @Keep
+  private native LatLng nativeLatLngForPixelAtElevation(float x, float y, double elevationMeters);
+
+  @Keep
   private native void nativeLatLngsForPixels(double[] input, double[] output, float pixelRatio);
 
   @Keep
@@ -1971,6 +2013,12 @@ final class NativeMapView implements NativeMap {
 
   @Keep
   private native int nativeGetTerrainLoadMode();
+
+  @Keep
+  private native void nativeSetTileLodMode(int mode);
+
+  @Keep
+  private native int nativeGetTileLodMode();
 
   @Keep
   private native void nativeAnchorCenterOnTerrain();

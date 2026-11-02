@@ -793,6 +793,19 @@ ScreenCoordinate TransformState::latLngToScreenCoordinate(const LatLng& latLng, 
     return {p[0] / p[3], size.height - p[1] / p[3]};
 }
 
+ScreenCoordinate TransformState::latLngToScreenCoordinate(const LatLng& latLng, double elevationMeters) const {
+    if (size.isEmpty()) {
+        return {};
+    }
+
+    // The world z of the coordinate matrix is in metres (see screenCoordinateToTileCoordinate)
+    Point<double> pt = Projection::project(latLng, scale) / util::tileSize_D;
+    vec4 c = {{pt.x, pt.y, elevationMeters, 1}};
+    vec4 p;
+    matrix::transformMat4(p, c, getCoordMatrix());
+    return {p[0] / p[3], size.height - p[1] / p[3]};
+}
+
 TileCoordinate TransformState::screenCoordinateToTileCoordinate(const ScreenCoordinate& point,
                                                                 uint8_t atZoom,
                                                                 double targetZ) const {

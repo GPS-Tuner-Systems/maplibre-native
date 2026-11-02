@@ -441,6 +441,25 @@ public final class MapLibreMap {
   }
 
   /**
+   * Selects how the zoom level of the tiles covering the view is chosen. With 3D terrain
+   * {@link TileLodMode#ADAPTIVE} keeps the number of tiles towards the horizon bounded.
+   *
+   * @param mode the tile LOD mode
+   */
+  public void setTileLodMode(@NonNull TileLodMode mode) {
+    nativeMapView.setTileLodMode(mode.ordinal());
+  }
+
+  /**
+   * @return the current tile LOD mode
+   * @see MapLibreMap#setTileLodMode(TileLodMode)
+   */
+  @NonNull
+  public TileLodMode getTileLodMode() {
+    return TileLodMode.values()[nativeMapView.getTileLodMode()];
+  }
+
+  /**
    * @return the current terrain load mode
    * @see MapLibreMap#setTerrainLoadMode(TerrainLoadMode)
    */

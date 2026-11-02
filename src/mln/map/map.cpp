@@ -441,6 +441,17 @@ LatLng Map::latLngForPixel(const ScreenCoordinate& pixel, LatLng::WrapMode wrapM
     return impl->transform.screenCoordinateToLatLng(pixel, wrapMode);
 }
 
+ScreenCoordinate Map::pixelForLatLng(const LatLng& latLng, double elevationMeters) const {
+    LatLng unwrappedLatLng = latLng.wrapped();
+    unwrappedLatLng.unwrapForShortestPath(impl->transform.getLatLng());
+    return impl->transform.latLngToScreenCoordinate(unwrappedLatLng, elevationMeters);
+}
+
+LatLng Map::latLngForPixel(const ScreenCoordinate& pixel, double elevationMeters, LatLng::WrapMode wrapMode) const {
+    LatLng latLng = impl->transform.screenCoordinateToLatLng(pixel, elevationMeters, LatLng::Unwrapped);
+    return wrapMode == LatLng::Wrapped ? latLng.wrapped() : latLng;
+}
+
 std::vector<ScreenCoordinate> Map::pixelsForLatLngs(const std::vector<LatLng>& latLngs) const {
     std::vector<ScreenCoordinate> ret;
     ret.reserve(latLngs.size());
