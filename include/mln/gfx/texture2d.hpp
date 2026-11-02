@@ -40,6 +40,10 @@ public:
     /// @return this
     virtual Texture2D& setSamplerConfiguration(const SamplerState& samplerState) noexcept = 0;
 
+    /// Rebuild the mip levels from level 0 after it was rendered to (for a mipmapped sampler
+    /// state). Backends without support leave it a no-op.
+    virtual void generateMipmaps() noexcept {}
+
     /// @brief Set the texture pixel and data format
     /// @param pixelFormat Pixel format to use
     /// @param channelType Data type of each color channel

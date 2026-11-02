@@ -497,6 +497,9 @@ RenderTarget::RenderResult RenderTarget::render(RenderOrchestrator& orchestrator
 
     parameters.renderPass.reset();
     parameters.encoder->present(*offscreenTexture);
+    if (drapeTileID) {
+        getTexture()->generateMipmaps();
+    }
 
     // Render-once (hillshade prepare) target baked; skip it on subsequent frames.
     if (renderOnce) {

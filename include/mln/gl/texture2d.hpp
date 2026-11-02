@@ -39,6 +39,8 @@ public: // gfx::Texture2D
 
     void create() override;
 
+    void generateMipmaps() noexcept override;
+
     void upload(const void* pixelData, const Size& size_) override;
     void uploadSubRegion(const void* pixelData, const Size& size, uint16_t xOffset, uint16_t yOffset) noexcept override;
     void upload() override;

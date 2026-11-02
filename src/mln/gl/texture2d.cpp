@@ -5,6 +5,8 @@
 #include <mln/platform/gl_functions.hpp>
 #include <mln/util/instrumentation.hpp>
 
+#include <cstring>
+
 namespace mln {
 namespace gl {
 
@@ -99,13 +101,43 @@ platform::GLuint Texture2D::getTextureID() const noexcept {
     return texture ? *texture : 0;
 }
 
+namespace {
+bool hasAnisotropicFiltering() {
+    using namespace platform;
+    static const bool available = [] {
+        const auto* extensions = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
+        return extensions && strstr(extensions, "GL_EXT_texture_filter_anisotropic") != nullptr;
+    }();
+    return available;
+}
+} // namespace
+
+void Texture2D::generateMipmaps() noexcept {
+    using namespace platform;
+    if (!texture || !samplerState.mipmapped) {
+        return;
+    }
+    context.activeTextureUnit = 0;
+    context.texture[0] = getTextureID();
+    if (samplerStateDirty) {
+        updateSamplerConfiguration();
+    }
+    MBGL_CHECK_ERROR(glGenerateMipmap(GL_TEXTURE_2D));
+}
+
 void Texture2D::updateSamplerConfiguration() noexcept {
     using namespace platform;
     samplerStateDirty = false;
 
+    const bool linear = samplerState.filter != gfx::TextureFilterType::Nearest;
     MBGL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D,
                                      GL_TEXTURE_MIN_FILTER,
-                                     samplerState.filter == gfx::TextureFilterType::Nearest ? GL_NEAREST : GL_LINEAR));
+                                     samplerState.mipmapped ? (linear ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
+                                                            : (linear ? GL_LINEAR : GL_NEAREST)));
+    if (samplerState.maxAnisotropy > 1 && hasAnisotropicFiltering()) {
+        MBGL_CHECK_ERROR(glTexParameterf(
+            GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, static_cast<float>(samplerState.maxAnisotropy)));
+    }
     MBGL_CHECK_ERROR(glTexParameteri(GL_TEXTURE_2D,
                                      GL_TEXTURE_MAG_FILTER,
                                      samplerState.filter == gfx::TextureFilterType::Nearest ? GL_NEAREST : GL_LINEAR));

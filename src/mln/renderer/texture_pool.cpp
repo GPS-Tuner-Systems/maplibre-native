@@ -1,5 +1,7 @@
 #include <mln/renderer/texture_pool.hpp>
 #include <mln/gfx/context.hpp>
+#include <mln/gfx/texture2d.hpp>
+#include <mln/renderer/render_target.hpp>
 #include <mln/util/logging.hpp>
 
 namespace mln {
@@ -22,6 +24,15 @@ void TexturePool::createRenderTarget(gfx::Context& context, const UnwrappedTileI
         {tileSize, tileSize}, gfx::TextureChannelDataType::UnsignedByte, /*stencil=*/true);
     renderTarget->setClearColor(backgroundColor);
     renderTarget->setDrapeTileID(id);
+    // The terrain samples its drape at grazing angles when pitched: mipmaps with anisotropic
+    // filtering keep distant draped lines and labels sharp instead of blurred or aliased.
+    if (const auto& texture = renderTarget->getTexture()) {
+        texture->setSamplerConfiguration({.filter = gfx::TextureFilterType::Linear,
+                                          .wrapU = gfx::TextureWrapType::Clamp,
+                                          .wrapV = gfx::TextureWrapType::Clamp,
+                                          .maxAnisotropy = 16,
+                                          .mipmapped = true});
+    }
     renderTargets[id] = std::move(renderTarget);
 }
 
