@@ -192,12 +192,15 @@ std::set<UnwrappedTileID> RenderTerrain::computeMeshCover(
     // Before the cap drops any tile, the farthest tiles past the DEM's maxzoom go back to their
     // parents (coarsenFarMeshTiles): the deeper mesh (meshMaxZoom) then costs detail in the
     // distance, where a tile covers little of the screen, instead of terrain render distance.
-    // Never shallower than the DEM, which the per-tile lookup needs (see above), so the cover is
-    // never coarser than it would be without the deeper mesh.
+    // Only if that is not enough do the farthest tiles go shallower than the DEM's maxzoom: such a
+    // tile samples a cached DEM ancestor (sources prefetch parent tiles) or renders flat, either of
+    // which is better than dropping it - a dropped tile leaves a hole showing only the background
+    // and the labels, at the horizon of a pitched view.
     if (updateParameters) {
         const size_t maxTiles = terrainLoadBudget(updateParameters->terrainLoadMode).maxMeshTiles;
         const auto origin = meshTileCapOrigin(state);
         out = coarsenFarMeshTiles(std::move(out), maxTiles, demSource->getMaxZoom(), origin);
+        out = coarsenFarMeshTiles(std::move(out), maxTiles, 0, origin);
         out = nearestMeshTiles(std::move(out), maxTiles, origin);
     }
     return out;
