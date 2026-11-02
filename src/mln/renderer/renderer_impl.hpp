@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
 #include <mln/gfx/context_observer.hpp>
 #include <mln/renderer/render_orchestrator.hpp>
 #include <mln/renderer/texture_pool.hpp>
@@ -67,7 +69,14 @@ private:
     // back to 1 to save GPU memory on constrained devices (each step is 4x memory/target).
     static constexpr uint32_t drapeTileSize = 512;
     static constexpr uint32_t drapeQualityFactor = 2;
-    TexturePool texturePool{drapeTileSize * drapeQualityFactor};
+    // On a high density screen 1024 is still fewer texels than the device pixels a 512 px tile
+    // covers (1344 at a pixel ratio of 2.625): 1-2 px outlines fell sub-texel and broke up into
+    // dashes when pitched. The target matches the device pixels, between 1024 and 2048.
+    static uint32_t drapeTargetSize(float pixelRatio) {
+        const auto devicePixels = static_cast<uint32_t>(std::ceil(drapeTileSize * pixelRatio));
+        return std::clamp<uint32_t>(devicePixels, drapeTileSize * drapeQualityFactor, 2048);
+    }
+    TexturePool texturePool;
 
     gfx::RendererBackend& backend;
 

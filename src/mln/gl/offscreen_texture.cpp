@@ -37,8 +37,9 @@ public:
             if (stencil) {
                 // Combined depth/stencil, as maplibre-gl-js attaches to its render-to-texture
                 // framebuffer (createFramebuffer(w, h, /*depth*/ true, /*stencil*/ true)). The
-                // stencil clips overlapping draped tiles against each other.
-                depthStencilBuffer = context.createRenderbuffer<gfx::RenderbufferPixelType::DepthStencil>(size);
+                // stencil clips overlapping draped tiles against each other. Only the terrain drape
+                // targets have a stencil; they share one depth/stencil buffer.
+                depthStencilBuffer = context.getSharedDepthStencilRenderbuffer(size);
                 framebuffer = context.createFramebuffer(*texture, *depthStencilBuffer);
             } else if (depth) {
                 depthBuffer = context.createRenderbuffer<gfx::RenderbufferPixelType::Depth>(size);
@@ -74,7 +75,7 @@ private:
     const bool depth;
     const bool stencil;
     std::optional<gfx::Renderbuffer<gfx::RenderbufferPixelType::Depth>> depthBuffer;
-    std::optional<gfx::Renderbuffer<gfx::RenderbufferPixelType::DepthStencil>> depthStencilBuffer;
+    std::shared_ptr<gfx::Renderbuffer<gfx::RenderbufferPixelType::DepthStencil>> depthStencilBuffer;
     std::optional<gl::Framebuffer> framebuffer;
 };
 

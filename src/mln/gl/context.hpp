@@ -258,7 +258,14 @@ public:
                                                                   bool depth,
                                                                   bool stencil) override;
 
+    /// The depth/stencil renderbuffer of the terrain drape targets, shared by all of them: they
+    /// are rendered one after the other and clear it at the start of each render pass.
+    std::shared_ptr<gfx::Renderbuffer<gfx::RenderbufferPixelType::DepthStencil>> getSharedDepthStencilRenderbuffer(
+        Size size);
+
 private:
+    std::shared_ptr<gfx::Renderbuffer<gfx::RenderbufferPixelType::DepthStencil>> sharedDepthStencilRenderbuffer;
+
     std::unique_ptr<gfx::RenderbufferResource> createRenderbufferResource(gfx::RenderbufferPixelType,
                                                                           Size size) override;
 

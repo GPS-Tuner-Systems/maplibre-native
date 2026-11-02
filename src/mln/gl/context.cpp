@@ -327,6 +327,16 @@ UniqueFramebuffer Context::createFramebuffer() {
     return UniqueFramebuffer{std::move(id), {this}};
 }
 
+std::shared_ptr<gfx::Renderbuffer<gfx::RenderbufferPixelType::DepthStencil>>
+Context::getSharedDepthStencilRenderbuffer(const Size size) {
+    if (!sharedDepthStencilRenderbuffer || sharedDepthStencilRenderbuffer->getSize() != size) {
+        sharedDepthStencilRenderbuffer =
+            std::make_shared<gfx::Renderbuffer<gfx::RenderbufferPixelType::DepthStencil>>(
+                createRenderbuffer<gfx::RenderbufferPixelType::DepthStencil>(size));
+    }
+    return sharedDepthStencilRenderbuffer;
+}
+
 std::unique_ptr<gfx::RenderbufferResource> Context::createRenderbufferResource(const gfx::RenderbufferPixelType type,
                                                                                const Size size) {
     MLN_TRACE_FUNC();
