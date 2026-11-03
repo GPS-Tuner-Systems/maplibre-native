@@ -1,6 +1,6 @@
 # GPS Tuner 3D terrain fork – notes for catching up with upstream
 
-State as of 2026-11-03 (NAVIE-1814, Android only). Read this before merging a newer
+State as of 2026-11-03 (NAVIE-1814, Android only; last update: draped dashed lines fix). Read this before merging a newer
 upstream `feature/terrain-3d` into the fork.
 
 ## Where things are
@@ -48,6 +48,7 @@ each line when merging a newer upstream: if upstream fixed it, take theirs and d
 | `aa4d8fb5ea09` | band of blocky roads mid-view: over the tile cap merge the deepest tiles first | still present |
 | `75ed1d33f468` | cursor slid off / view jerked: clamped centre altitude snapped only after transitions. Eases on every frame, also during transitions | **partly fixed upstream** (#4865, #4870, #4873 – gesture hold, eye clearance, animation target height) |
 | `1051aa29a67a` | route arrows / labels missing in front of the camera over high ground: collision index projected symbols at sea level | still present |
+| `548a37a39946` | dashed paths/tracks/cycleways invisible on terrain (thin ones gone, wide ones faded): SDF, pattern and gradient line shaders used the screen perspective gamma scale in the drape pass; only the simple line shader had the drape branch | still present (found 2026-11-03) |
 
 ## The app side (depends on the fork APIs above)
 
