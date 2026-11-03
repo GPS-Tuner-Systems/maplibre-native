@@ -466,6 +466,15 @@ void Map::Impl::onTerrainCenterElevationChanged(double elevationMeters) {
 }
 
 void Map::Impl::easeClampedCenterAltitude(TimePoint now) {
+    if (!std::isnan(heldCenterAltitude)) {
+        // The app drives the altitude (Map::setCenterAltitude); a transition frame wrote its own
+        if (transform.getState().getCenterAltitude() != heldCenterAltitude) {
+            transform.setCenterAltitudeKeepingTransition(heldCenterAltitude);
+        }
+        centerAltitudeEasing = false;
+        easedCenterAltitude = std::numeric_limits<double>::quiet_NaN();
+        return;
+    }
     if (!centerClampedToGround || !style->impl->getTerrain() || std::isnan(terrainCenterElevation)) {
         centerAltitudeEasing = false;
         easedCenterAltitude = std::numeric_limits<double>::quiet_NaN();

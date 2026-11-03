@@ -1388,6 +1388,10 @@ void NativeMapView::setCenterClampedToGround(JNIEnv&, jni::jboolean clamped) {
     map->setCenterClampedToGround(clamped);
 }
 
+void NativeMapView::setCenterAltitude(JNIEnv&, jni::jdouble altitude) {
+    map->setCenterAltitude(altitude);
+}
+
 jni::jboolean NativeMapView::getCenterClampedToGround(JNIEnv&) {
     return jni::jboolean(map->getCenterClampedToGround());
 }
@@ -1587,6 +1591,7 @@ void NativeMapView::registerNative(jni::JNIEnv& env) {
         METHOD(&NativeMapView::getTerrainSkirtLength, "nativeGetTerrainSkirtLength"),
         METHOD(&NativeMapView::setCenterClampedToGround, "nativeSetCenterClampedToGround"),
         METHOD(&NativeMapView::getCenterClampedToGround, "nativeGetCenterClampedToGround"),
+        METHOD(&NativeMapView::setCenterAltitude, "nativeSetCenterAltitude"),
         METHOD(&NativeMapView::setDebugAboveGroundLog, "nativeSetDebugAboveGroundLog"),
         METHOD(&NativeMapView::setTileLodPitchThreshold, "nativeSetTileLodPitchThreshold"),
         METHOD(&NativeMapView::getTileLodPitchThreshold, "nativeGetTileLodPitchThreshold"),

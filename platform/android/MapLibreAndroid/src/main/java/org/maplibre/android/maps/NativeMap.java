@@ -315,6 +315,8 @@ interface NativeMap {
 
   boolean getCenterClampedToGround();
 
+  void setCenterAltitude(double altitude);
+
   void setTileLodPitchThreshold(double threshold);
 
   double getTileLodPitchThreshold();

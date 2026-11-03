@@ -3,6 +3,8 @@
 #include <mln/map/camera.hpp>
 #include <mln/map/map.hpp>
 #include <mln/map/map_impl.hpp>
+#include <cmath>
+#include <limits>
 #include <mln/map/transform.hpp>
 #include <mln/math/angles.hpp>
 #include <mln/math/log2.hpp>
@@ -651,7 +653,18 @@ bool Map::setCenterAltitudeKeepingView(double altitudeMeters) {
 
 void Map::setCenterClampedToGround(bool clamped) {
     impl->centerClampedToGround = clamped;
+    if (clamped) {
+        impl->heldCenterAltitude = std::numeric_limits<double>::quiet_NaN();
+    }
     // Start easing the centre onto the ground (or let it be) right away, not on the next camera change
+    impl->onUpdate();
+}
+
+void Map::setCenterAltitude(double altitudeMeters) {
+    impl->heldCenterAltitude = altitudeMeters;
+    if (!std::isnan(altitudeMeters)) {
+        impl->transform.setCenterAltitudeKeepingTransition(altitudeMeters);
+    }
     impl->onUpdate();
 }
 

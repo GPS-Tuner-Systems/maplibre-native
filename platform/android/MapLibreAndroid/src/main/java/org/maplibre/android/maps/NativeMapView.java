@@ -1000,6 +1000,14 @@ final class NativeMapView implements NativeMap {
   }
 
   @Override
+  public void setCenterAltitude(double altitude) {
+    if (checkState("setCenterAltitude")) {
+      return;
+    }
+    nativeSetCenterAltitude(altitude);
+  }
+
+  @Override
   public boolean getCenterClampedToGround() {
     if (checkState("getCenterClampedToGround")) {
       return false;
@@ -2037,6 +2045,9 @@ final class NativeMapView implements NativeMap {
 
   @Keep
   private native void nativeSetCenterClampedToGround(boolean clamped);
+
+  @Keep
+  private native void nativeSetCenterAltitude(double altitude);
 
   @Keep
   private native boolean nativeGetCenterClampedToGround();

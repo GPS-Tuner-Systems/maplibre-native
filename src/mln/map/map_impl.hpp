@@ -153,6 +153,9 @@ public:
     // has not reached it, so frames keep coming until it has.
     bool centerAltitudeEasing = false;
     double easedCenterAltitude = std::numeric_limits<double>::quiet_NaN();
+    // Set by Map::setCenterAltitude: the centre altitude the app holds, put back after every
+    // transition frame. NaN when not held.
+    double heldCenterAltitude = std::numeric_limits<double>::quiet_NaN();
     TimePoint lastCenterAltitudeEase{};
     void easeClampedCenterAltitude(TimePoint now);
     /// Moves the centre altitude to `elevationMeters` keeping lng/lat; false when the change

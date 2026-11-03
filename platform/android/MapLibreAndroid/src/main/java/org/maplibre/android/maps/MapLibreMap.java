@@ -509,6 +509,19 @@ public final class MapLibreMap {
   }
 
   /**
+   * Holds the camera centre's altitude at {@code altitude} metres above sea level (terrain
+   * exaggeration applied), over running camera animations too, without moving the centre's
+   * position: the view moves with it. Meant for driving the altitude along with a terrain whose
+   * exaggeration the app animates. Pass {@link Double#NaN}, or turn
+   * {@link #setCenterClampedToGround(boolean)} on, to release it.
+   *
+   * @param altitude the centre altitude in metres, or NaN to release it
+   */
+  public void setCenterAltitude(double altitude) {
+    nativeMapView.setCenterAltitude(altitude);
+  }
+
+  /**
    * Moves the camera's centre along the line of sight to {@code altitude} metres above sea level
    * without moving the camera. Nothing on screen moves; the target and zoom of
    * {@link #getCameraPosition()} change to describe the same view from the new centre. Pass 0 to

@@ -242,6 +242,11 @@ public:
     /// here, gestures would go back to turning round a sea-level point under the terrain.
     void setCenterClampedToGround(bool clamped);
     bool getCenterClampedToGround() const;
+    /// Holds the centre altitude (metres above sea level, terrain exaggeration applied) at the
+    /// given value, over running camera transitions too, without moving the centre's lng/lat - the
+    /// view moves with it. For an app that drives the altitude itself, e.g. along with a terrain
+    /// whose exaggeration it animates. NaN, or turning setCenterClampedToGround on, releases it.
+    void setCenterAltitude(double altitudeMeters);
 
     /// Moves the camera's centre onto the terrain under it without moving the camera: the centre
     /// slides along the line of sight up to the ground and the zoom tightens by the distance saved,

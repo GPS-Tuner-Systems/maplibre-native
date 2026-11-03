@@ -366,6 +366,8 @@ public:
 
     jni::jboolean getCenterClampedToGround(JNIEnv&);
 
+    void setCenterAltitude(JNIEnv&, jni::jdouble);
+
     void setDebugAboveGroundLog(JNIEnv&, jni::jboolean);
 
     void setTileLodPitchThreshold(JNIEnv&, jni::jdouble);
