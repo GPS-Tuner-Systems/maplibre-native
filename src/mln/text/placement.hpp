@@ -122,6 +122,13 @@ public:
 
     virtual ~Placement();
     virtual void placeLayers(const RenderLayerReferences&);
+    /// Terrain height (metres, exaggeration applied) at a position in tile units of a tile, for
+    /// placing symbols raised onto 3D terrain; set for the duration of placeLayers only.
+    using TerrainElevation = std::function<float(const UnwrappedTileID&, float x, float y)>;
+    void setTerrainElevation(TerrainElevation elevation) {
+        terrainElevation = std::move(elevation);
+        if (!terrainElevation) collisionIndex.setTileElevation({});
+    }
     void updateLayerBuckets(const RenderLayer&, const TransformState&, bool updateOpacities) const;
     virtual float symbolFadeChange(TimePoint now) const;
     virtual bool hasTransitions(TimePoint now) const;
@@ -130,6 +137,7 @@ public:
     virtual const std::vector<PlacedSymbolData>& getPlacedSymbolsData() const;
 
     const CollisionIndex& getCollisionIndex() const;
+    TerrainElevation terrainElevation;
     TimePoint getCommitTime() const { return commitTime; }
     Duration getUpdatePeriod(float zoom) const;
 

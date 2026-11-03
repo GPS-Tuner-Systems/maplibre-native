@@ -423,7 +423,7 @@ std::unordered_map<uint32_t, std::vector<IndexedSubfeature>> CollisionIndex::que
 }
 
 std::pair<float, float> CollisionIndex::projectAnchor(const mat4& posMatrix, const Point<float>& point) const {
-    vec4 p = {{point.x, point.y, 0, 1}};
+    vec4 p = {{point.x, point.y, elevationAt(point), 1}};
     matrix::transformMat4(p, p, posMatrix);
     return std::make_pair(0.5f + 0.5f * (transformState.getCameraToCenterDistance() / static_cast<float>(p[3])),
                           static_cast<float>(p[3]));
@@ -431,7 +431,7 @@ std::pair<float, float> CollisionIndex::projectAnchor(const mat4& posMatrix, con
 
 std::pair<Point<float>, float> CollisionIndex::projectAndGetPerspectiveRatio(const mat4& posMatrix,
                                                                              const Point<float>& point) const {
-    vec4 p = {{point.x, point.y, 0, 1}};
+    vec4 p = {{point.x, point.y, elevationAt(point), 1}};
     matrix::transformMat4(p, p, posMatrix);
     auto size = transformState.getSize();
     return std::make_pair(Point<float>(static_cast<float>(((p[0] / p[3] + 1) / 2) * size.width + viewportPadding),
@@ -443,7 +443,7 @@ std::pair<Point<float>, float> CollisionIndex::projectAndGetPerspectiveRatio(con
 }
 
 Point<float> CollisionIndex::projectPoint(const mat4& posMatrix, const Point<float>& point) const {
-    vec4 p = {{point.x, point.y, 0, 1}};
+    vec4 p = {{point.x, point.y, elevationAt(point), 1}};
     matrix::transformMat4(p, p, posMatrix);
     auto size = transformState.getSize();
     return Point<float>{static_cast<float>((((p[0] / p[3] + 1) / 2) * size.width) + viewportPadding),

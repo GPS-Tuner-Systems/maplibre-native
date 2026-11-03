@@ -243,6 +243,14 @@ void Placement::placeSymbolBucket(const BucketPlacementData& params, std::set<ui
                          placementZoom,
                          collisionGroups.get(params.sourceId),
                          getAvoidEdges(symbolBucket, renderTile.matrix)};
+    if (terrainElevation) {
+        collisionIndex.setTileElevation(
+            [elevation = terrainElevation, tileID = renderTile.id](float x, float y) {
+                return elevation(tileID, x, y);
+            });
+    } else {
+        collisionIndex.setTileElevation({});
+    }
     for (const SymbolInstance& symbol : getSortedSymbols(params, ctx.pixelRatio)) {
         if (!symbol.check(SYM_GUARD_LOC)) continue;
         if (seenCrossTileIDs.contains(symbol.getCrossTileID())) continue;

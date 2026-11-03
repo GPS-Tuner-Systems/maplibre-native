@@ -7,6 +7,7 @@
 #include <mln/map/transform_state.hpp>
 
 #include <array>
+#include <functional>
 
 namespace mln {
 
@@ -66,7 +67,17 @@ public:
 
     float getViewportPadding() const { return viewportPadding; }
 
+    /// Terrain height (metres, exaggeration applied) at a position in tile units of the tile whose
+    /// symbols are being placed. With 3D terrain the symbols are drawn raised onto the terrain, so
+    /// they are projected - and collide, and are judged on- or off-screen - at that height, not at
+    /// sea level. Set per tile by the placement; empty without terrain.
+    using TileElevation = std::function<float(float x, float y)>;
+    void setTileElevation(TileElevation elevation) { tileElevation = std::move(elevation); }
+
 private:
+    float elevationAt(const Point<float>& point) const { return tileElevation ? tileElevation(point.x, point.y) : 0.0f; }
+    TileElevation tileElevation;
+
     bool isOffscreen(const CollisionBoundaries&) const;
     bool isInsideGrid(const CollisionBoundaries&) const;
     bool isInsideTile(const CollisionBoundaries& boundaries, const CollisionBoundaries& tileBoundaries) const;

@@ -628,7 +628,14 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
         symbolBucketsChanged |= renderTreeParameters->placementChanged;
         if (renderTreeParameters->placementChanged) {
             Mutable<Placement> placement = Placement::create(updateParameters, placementController.getPlacement());
+            // Symbols are drawn raised onto 3D terrain: place them at that height
+            if (renderTerrain && renderTerrain->isEnabled()) {
+                placement->setTerrainElevation([terrain = renderTerrain.get()](const UnwrappedTileID& tileID, float x, float y) {
+                    return terrain->getElevationWithExaggeration(tileID, x, y);
+                });
+            }
             placement->placeLayers(layersNeedPlacement);
+            placement->setTerrainElevation({});
             placementController.setPlacement(std::move(placement));
             crossTileSymbolIndex.pruneUnusedLayers(usedSymbolLayers);
             for (const auto& entry : renderSources) {
