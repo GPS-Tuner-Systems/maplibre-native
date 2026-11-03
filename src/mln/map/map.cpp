@@ -651,6 +651,8 @@ bool Map::setCenterAltitudeKeepingView(double altitudeMeters) {
 
 void Map::setCenterClampedToGround(bool clamped) {
     impl->centerClampedToGround = clamped;
+    // Start easing the centre onto the ground (or let it be) right away, not on the next camera change
+    impl->onUpdate();
 }
 
 bool Map::getCenterClampedToGround() const {

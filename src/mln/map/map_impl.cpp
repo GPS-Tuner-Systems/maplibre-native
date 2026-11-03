@@ -12,6 +12,8 @@
 #include <mln/util/action_journal_impl.hpp>
 #include <mln/gfx/rendering_stats.hpp>
 
+#include <algorithm>
+#include <chrono>
 #include <cmath>
 
 namespace mln {
@@ -123,6 +125,12 @@ void Map::Impl::onUpdate() {
 
     transform.updateTransitions(timePoint);
 
+    // A transition writes the centre altitude it started with on every frame, so with the clamp on
+    // the centre would only catch up with the ground once the transition is over: in steps, as an
+    // app that keeps animating the camera (following a moving position) never lets one finish.
+    // Bring the centre towards the ground on every frame instead, leaving the transition running.
+    easeClampedCenterAltitude(timePoint);
+
     // Terrain removed: a centre that gestures anchored on it (or the clamp held there) would stay
     // up to kilometres above the now flat map, and pans, tile cover and label placement would
     // all work on that raised plane. Bring it back to sea level, keeping the view - once no
@@ -136,9 +144,6 @@ void Map::Impl::onUpdate() {
     // terrain removed during the transition, so only apply it while there is still terrain.
     if (centerAwaitingTerrainAnchor && !transform.inTransition()) {
         centerAwaitingTerrainAnchor = false;
-        if (centerClampedToGround && style->impl->getTerrain() && !std::isnan(terrainCenterElevation)) {
-            clampCenterToTerrain(terrainCenterElevation);
-        }
     }
 
     std::optional<Immutable<style::Terrain::Impl>> terrainImpl;
@@ -305,7 +310,7 @@ void Map::Impl::onDidFinishRenderingFrame(RenderMode renderMode,
             actionJournal->impl->onDidFinishRenderingFrame(frameStatus);
         }
 
-        if (needsRepaint || transform.inTransition()) {
+        if (needsRepaint || transform.inTransition() || centerAltitudeEasing) {
             onUpdate();
         } else if (rendererFullyLoaded) {
             observer.onDidBecomeIdle();
@@ -449,16 +454,58 @@ void Map::Impl::onTerrainCenterElevationChanged(double elevationMeters) {
     if (!centerClampedToGround) {
         return;
     }
-    // A running transition (an animated recenter, a fling) owns the camera: the jump below
-    // would cancel it, and across relief the height changes every frame, so the move stopped
-    // within a few kilometres of where it started. Let it finish; onUpdate applies the latest
-    // height once it has.
-    if (transform.inTransition()) {
-        centerAwaitingTerrainAnchor = true;
+    // The centre eases to the new height over the next frames (easeClampedCenterAltitude), never
+    // jumping and never cancelling a running transition.
+    if (!centerAltitudeEasing) {
+        centerAltitudeEasing = true;
+        lastCenterAltitudeEase = Clock::now();
+    }
+    if (!transform.inTransition()) {
+        onUpdate();
+    }
+}
+
+void Map::Impl::easeClampedCenterAltitude(TimePoint now) {
+    if (!centerClampedToGround || !style->impl->getTerrain() || std::isnan(terrainCenterElevation)) {
+        centerAltitudeEasing = false;
+        easedCenterAltitude = std::numeric_limits<double>::quiet_NaN();
         return;
     }
-    if (clampCenterToTerrain(elevationMeters)) {
-        onUpdate();
+    const double stateAltitude = transform.getState().getCenterAltitude();
+    // At rest the centre altitude is the camera's (a gesture may have set it). A transition writes
+    // its own altitude on every frame, so during one the eased altitude is kept here and put back.
+    if (std::isnan(easedCenterAltitude) || (!transform.inTransition() && !centerAltitudeEasing)) {
+        easedCenterAltitude = stateAltitude;
+    }
+    const double target = terrainCenterElevation;
+    if (!centerAltitudeEasing && std::abs(target - easedCenterAltitude) >= 0.05) {
+        centerAltitudeEasing = true;
+        lastCenterAltitudeEase = now;
+    }
+    if (centerAltitudeEasing) {
+        // Following the ground height step by step shook a close-up camera, and a jump to it moved
+        // the whole view at once: ease with a time constant instead, independent of the framerate.
+        constexpr double timeConstantSeconds = 0.6;
+        const double dt =
+            std::clamp(std::chrono::duration<double>(now - lastCenterAltitudeEase).count(), 0.0, 0.1);
+        lastCenterAltitudeEase = now;
+        easedCenterAltitude += (target - easedCenterAltitude) * (1.0 - std::exp(-dt / timeConstantSeconds));
+        // Ground rising above the centre must not overtake a close camera (in a close-up it is only
+        // some hundred metres away): keep the centre within a fifth of that distance below it.
+        const CameraOptions camera = transform.getCameraOptions(std::nullopt);
+        if (camera.center && camera.zoom) {
+            const double cameraDistanceMeters =
+                transform.getState().getCameraToCenterDistance() *
+                Projection::getMetersPerPixelAtLatitude(camera.center->latitude(), *camera.zoom);
+            easedCenterAltitude = std::max(easedCenterAltitude, target - 0.2 * cameraDistanceMeters);
+        }
+        if (std::abs(target - easedCenterAltitude) < 0.05) {
+            easedCenterAltitude = target;
+            centerAltitudeEasing = false;
+        }
+    }
+    if (easedCenterAltitude != stateAltitude) {
+        transform.setCenterAltitudeKeepingTransition(easedCenterAltitude);
     }
 }
 

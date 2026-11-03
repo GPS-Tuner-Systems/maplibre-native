@@ -116,6 +116,9 @@ public:
     TimePoint getTransitionStart() const { return transitionStart; }
     Duration getTransitionDuration() const { return transitionDuration; }
     void cancelTransitions();
+    /// Sets the centre altitude (metres) without cancelling a running transition: its next frame
+    /// writes its own altitude again, so apply it after updateTransitions.
+    void setCenterAltitudeKeepingTransition(double altitudeMeters) { state.setCenterAltitude(altitudeMeters); }
 
     // Gesture
     void setGestureInProgress(bool);

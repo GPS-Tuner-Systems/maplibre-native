@@ -149,6 +149,12 @@ public:
     /// A height report arrived while a camera transition was running; the clamp applies it
     /// once the transition ends instead of cutting the transition short.
     bool centerAwaitingTerrainAnchor = false;
+    // The clamped centre eases towards the ground height (easeClampedCenterAltitude); set while it
+    // has not reached it, so frames keep coming until it has.
+    bool centerAltitudeEasing = false;
+    double easedCenterAltitude = std::numeric_limits<double>::quiet_NaN();
+    TimePoint lastCenterAltitudeEase{};
+    void easeClampedCenterAltitude(TimePoint now);
     /// Moves the centre altitude to `elevationMeters` keeping lng/lat; false when the change
     /// is under the sub-metre threshold.
     bool clampCenterToTerrain(double elevationMeters);
